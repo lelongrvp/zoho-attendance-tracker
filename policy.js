@@ -336,3 +336,34 @@ export function isUsablePayload(data) {
     days.some((day) => Number.isFinite(Number(day.tsecs)))
   );
 }
+
+// An attendance request ("regulation ticket") arrives as approvalInfo on the
+// day it covers. The shape is still unverified (see README), so this answers
+// only "is there something here" — defensively, because the plain truthiness
+// test it replaces counted an empty object or array as a used request.
+export function hasAttendanceRequest(day) {
+  const info = day?.approvalInfo;
+  if (!info) {
+    return false;
+  }
+  if (Array.isArray(info)) {
+    return info.length > 0;
+  }
+  if (typeof info === "object") {
+    return Object.keys(info).length > 0;
+  }
+  return String(info).trim() !== "";
+}
+
+// Whatever approvalInfo actually holds, verbatim and truncated, for tooltips.
+// Interpreting it would mean guessing at an unverified shape; showing it is
+// also how the assumption finally gets checked - from the popup, on a real
+// day, without opening the console.
+export function describeAttendanceRequest(day) {
+  if (!hasAttendanceRequest(day)) {
+    return "";
+  }
+  const info = day.approvalInfo;
+  const text = typeof info === "string" ? info.trim() : JSON.stringify(info);
+  return text.length > 120 ? `${text.slice(0, 117)}...` : text;
+}

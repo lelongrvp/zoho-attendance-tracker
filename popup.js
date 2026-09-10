@@ -1,7 +1,9 @@
 import {
   computeEffectiveTargets,
   computeWorkedTargets,
+  describeAttendanceRequest,
   findActiveCheckin,
+  hasAttendanceRequest,
   getCurrentCycle,
   isPastLateThreshold,
   pad,
@@ -197,7 +199,10 @@ document.addEventListener("DOMContentLoaded", function () {
           </svg>
         `;
         if (records[i]) {
-          slot.title = `${records[i].label} · ${records[i].hours}h`;
+          const { label, hours, note } = records[i];
+          slot.title = [label, hours === undefined ? null : `${hours}h`, note]
+            .filter(Boolean)
+            .join(" · ");
         }
       }
       container.appendChild(slot);
@@ -447,6 +452,20 @@ document.addEventListener("DOMContentLoaded", function () {
         if (statusText) {
           title += ` · ${statusText}`;
         }
+        // A request is orthogonal to the hours worked, which already own the
+        // cell's colour, so it gets its own channel: a corner mark taken out
+        // of flow, leaving the date sitting exactly where every other date
+        // sits. What the request actually says rides along in the tooltip.
+        if (hasAttendanceRequest(day)) {
+          const marker = document.createElement("i");
+          marker.className = "req-dot";
+          cell.appendChild(marker);
+          title += ` · ${translate("calRequest")}`;
+          const detail = describeAttendanceRequest(day);
+          if (detail) {
+            title += ` (${detail})`;
+          }
+        }
       } else {
         cell.classList.add(isFuture ? "future" : "off");
         title += ` · ${translate("calNoData")}`;
@@ -466,8 +485,8 @@ document.addEventListener("DOMContentLoaded", function () {
 
     const days6To8Hours = [];
     const daysBelow6Hours = [];
+    const requestDays = [];
     const cycleDays = [];
-    let daysNoAttendance = 0;
     let leaveUsed = 0;
     let absentCount = 0;
     let workedSeconds = 0;
@@ -495,8 +514,8 @@ document.addEventListener("DOMContentLoaded", function () {
         }
       }
 
-      if (day.approvalInfo) {
-        daysNoAttendance++;
+      if (hasAttendanceRequest(day)) {
+        requestDays.push({ label, note: describeAttendanceRequest(day) });
       }
       leaveUsed += Number(day.leaveDaysTaken) || 0;
       if ((day.status || "").trim() === "Absent") {
@@ -517,11 +536,13 @@ document.addEventListener("DOMContentLoaded", function () {
         ? days6To8Hours.map((r) => `${r.hours}h`).join(", ")
         : translate("noRecords");
 
-    renderCheckboxes("cb-requests", daysNoAttendance, policy.requestQuota);
-    document.getElementById("no-attendance-details").textContent = translate(
-      "usedOf",
-      { n: daysNoAttendance, m: policy.requestQuota },
-    );
+    renderCheckboxes("cb-requests", requestDays.length, policy.requestQuota, {
+      records: requestDays,
+    });
+    document.getElementById("no-attendance-details").textContent =
+      requestDays.length > 0
+        ? requestDays.map((request) => request.label).join(", ")
+        : translate("none");
 
     renderCheckboxes(
       "cb-below-6-hours",

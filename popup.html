@@ -299,7 +299,10 @@
 
       /* ---------------------------------------------- today panel (focal) */
 
-      .today {
+      /* Element-qualified on purpose: a bare `.today` also matches the
+           calendar's today cell, whose padding it would silently inherit and
+           push the date off-centre. */
+      section.today {
         margin-top: 13px;
         padding: 13px 14px 14px;
         background: var(--panel);
@@ -762,6 +765,7 @@
       }
 
       .cal-cell {
+        position: relative;
         height: 34px;
         display: grid;
         place-items: center;
@@ -826,6 +830,19 @@
         box-shadow: inset 0 0 0 1.5px var(--amber);
       }
 
+      /* Out of flow deliberately: the date must not shift to make room for
+           the mark, and the cell's colour is already spoken for by the hours. */
+      .req-dot {
+        position: absolute;
+        top: 3px;
+        right: 3px;
+        width: 5px;
+        height: 5px;
+        border-radius: 50%;
+        background: var(--amber);
+        box-shadow: 0 0 0 1px var(--paper);
+      }
+
       .cal-legend {
         display: flex;
         flex-wrap: wrap;
@@ -872,6 +889,14 @@
       .sw-off {
         background: var(--panel);
         border-color: var(--rule);
+      }
+
+      .cal-legend i.sw-request {
+        width: 7px;
+        height: 7px;
+        margin: 0 1.5px;
+        border-radius: 50%;
+        background: var(--amber);
       }
 
       /* ---------------------------------------------- freshness */
@@ -1343,6 +1368,10 @@
         <span><i class="sw-leave"></i><em data-i18n="legLeave">Leave</em></span>
         <span
           ><i class="sw-absent"></i><em data-i18n="legAbsent">Absent</em></span
+        >
+        <span
+          ><i class="sw-request"></i
+          ><em data-i18n="legRequest">Request</em></span
         >
         <span
           ><i class="sw-off"></i><em data-i18n="legNone">No record</em></span

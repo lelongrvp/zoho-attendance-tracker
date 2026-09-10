@@ -15,7 +15,9 @@ set in the Gruvbox palette, light and dark.
   requests (3 allowed), days under 6 hours (flagged as violations), plus leave
   and absence counts. Going over a quota turns the count red and marks the
   overflow; sitting exactly on it turns the count amber. Each filled slot's
-  tooltip names the day it came from.
+  tooltip names the day it came from, and the attendance-request row lists
+  those dates in full underneath, so a used request is traceable to a day
+  rather than being just a number.
 - **Daily hours** — one bar per day of the cycle, so short days read as a pattern
   rather than a list, and a running **balance** against 8h per recorded day.
 - **Notifications** — Chrome notifies you at the part-time and full-time marks,
@@ -47,8 +49,11 @@ set in the Gruvbox palette, light and dark.
 - **Calendar tab** — the popup has two tabs, Attendance and Calendar. The
   calendar renders the whole payroll cycle as a grid from the same cached data:
   full days in ink, 6-8h days grey, sub-6h days red, leave green, absences
-  tinted, future days dashed, today ringed. Statuses the quota logic does not
-  understand are shown verbatim in each cell's tooltip rather than interpreted.
+  tinted, future days dashed, today ringed. A day carrying an attendance
+  request gets an amber corner dot, orthogonal to the hours because those
+  already own the cell's colour, and its tooltip carries the request's raw
+  contents. Statuses the quota logic does not understand are shown verbatim in
+  each cell's tooltip rather than interpreted.
   The active tab is remembered.
 - **Stale-while-revalidate** — the popup always paints instantly from cache,
   then quietly asks the worker for fresh data if the cache is older than five
@@ -143,8 +148,11 @@ chrome.storage.local.get("attendanceData", (d) =>
 );
 ```
 
-- `approvalInfo` being truthy means an attendance request. If Zoho attaches an
-  empty object to every day, every day gets counted.
+- `approvalInfo` being present means an attendance request. Emptiness is now
+  handled - an empty object, empty array or blank string no longer counts as a
+  used request - but what the field means is still inferred. The calendar puts
+  each flagged day's raw `approvalInfo` in its tooltip, so the assumption can
+  be checked from the popup on a real day, without the console.
 - `orgdate` is `yyyy-MM-dd`. Another format would misparse silently.
 - ~~`entries` pair shape~~ — verified live 2026-09-10: entries are
   `{fdate, tdate}` pairs in `DD-MMM-YYYY - HH:mm` format, with `tdate: "-"` for
@@ -226,6 +234,21 @@ pattern is identical to attendance.
   keep working; they write the same storage keys.
 
 ## Release notes
+
+### 1.7.0 — 2026-09-10
+
+- Attendance requests are traceable to a day: the calendar marks each day
+  carrying a request with an amber corner dot, the quota row lists those dates
+  under the checkboxes, and every request tooltip - on the calendar cell and on
+  the checkbox slot - shows the raw `approvalInfo` verbatim, which is also how
+  the last unverified payload assumption gets checked without the console.
+- An empty `approvalInfo` (`{}`, `[]`, or a blank string) no longer counts as a
+  used request. The plain truthiness test it replaces would have quietly
+  inflated the count on every day Zoho attaches an empty field to.
+- Calendar alignment, second half: the today cell's date sat 5px low because
+  the unrelated `.today` panel rule also matched it and leaked its padding in.
+  That rule is now element-qualified, so every date in the grid renders at the
+  same pixel and colour is the only thing that distinguishes them.
 
 ### 1.6.2 — 2026-09-10
 

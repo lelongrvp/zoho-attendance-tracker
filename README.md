@@ -158,6 +158,73 @@ format this extension does not know is kept verbatim, skipped by every
 computation, and reported in the worker console once per refresh — never
 guessed at, and never warned about once a second from the popup's timer loop.
 
+## Roadmap
+
+Reference for future upgrades, in rough priority order. Items marked **gated**
+need a specific action (listed) before they can be built.
+
+### Next
+
+1. **Ship to the Chrome Web Store (unlisted).** All materials are in-repo; the
+   remaining steps are manual: push this repo to a remote you own, host
+   `PRIVACY.md` at a public URL, register the $5 developer account, take
+   screenshots on a real account (blur names), upload
+   `scripts/package.sh`'s zip, set visibility Unlisted. If the team runs
+   managed Chrome, ask IT about `ExtensionInstallForcelist` instead — it
+   removes even the install click.
+2. **Flip the target model to worked hours** — gated on observation, not code:
+   watch the popup's "Worked …" line for about a week; if it never turns red
+   against real days, switch **Target model** on the options page to "Hours
+   actually worked". The model, tests, and UI are already shipped (v1.4.0);
+   only the default is conservative.
+3. **Verify `approvalInfo`** — the last unverified payload assumption, and it
+   feeds the requests quota. Run the console one-liner in *Unverified
+   assumptions* above on a day that has an approval record and check whether
+   the field is a meaningful object or an always-present `{}`. If the latter,
+   the requests counter needs a real predicate.
+
+### Gated on a DevTools capture
+
+Each of these becomes a new popup tab (the tab bar already exists) once one
+request is captured from Zoho with DevTools → Network open on the relevant
+page: copy the data call's URL + payload here and the worker/cache/render
+pattern is identical to attendance.
+
+- **Leave balances** by type (leave page capture).
+- **Upcoming holidays** (holidays page capture — often the same response as
+  leave, may come free with it).
+- **Team: who's out today** (team/colleagues page capture).
+
+### Polish, whenever
+
+- Translate the options page (popup and notifications are bilingual; settings
+  are English-only).
+- Light-Gruvbox alternative for anyone finding the cream too yellow: swap
+  `--paper` to bg0_h `#f9f5d7` and demote `#fbf1c7` to panel — one-line change
+  in `themes.js`.
+- VI freshness stamp can wrap to two lines in the masthead; contained but
+  slightly untidy.
+- Worst-case attendance tab height is ~609px (alert + over-quota + violations
+  all at once), 9px past Chrome's no-scroll budget; trim only if actually seen.
+- Per-scheme neutrals are derived by blending, not each scheme's official
+  greys — pin exact values per scheme in `themes.js` if fidelity matters.
+- Notification snooze is a fixed 15 minutes; could be configurable.
+
+### Decided against (and why)
+
+- **Any write to Zoho** (auto check-out, filing requests): undocumented
+  endpoint, scraped token, consequences land on a real HR record.
+- **Content script on people.zoho.com**: more permissions and breakage surface
+  for nothing the existing endpoint doesn't provide.
+- **Fetching more than two months**: exactly two are needed for the
+  21st-to-20th cycle; more is extra load on an internal endpoint for history
+  rarely viewed.
+- **`chrome.storage.sync`**: single user, single machine; adds write quotas.
+- **Charting library / build step / TypeScript**: MV3 CSP forbids remote
+  scripts and the no-tooling property is a feature at this size.
+- **Options page as the only config path**: console overrides intentionally
+  keep working; they write the same storage keys.
+
 ## Release notes
 
 ### 1.6.2 — 2026-09-10

@@ -411,6 +411,16 @@ and UI shipped in 1.4.0; only the default is conservative.
 
 ## Release notes
 
+### 1.8.2.1 — 2026-09-10
+
+- Past-cycle loading confirmed working against a live session: the calendar's
+  back-arrows fetch, cache and render a month outside the rolling two-month
+  window. A four-part version because this confirms 1.8.2 and adds no
+  behaviour — 1.8.3 is spoken for by the roadmap.
+- `preMonth` verified as a true month offset rather than the two-state flag
+  its only two original call sites made it look like; see *Unverified
+  assumptions*.
+
 ### 1.8.2 — 2026-09-10
 
 - A month Zoho answers with the wrong period is refused instead of cached

@@ -1,10 +1,17 @@
 {
   "manifest_version": 3,
-  "name": "Zoho Attendance Checker",
-  "version": "1.6.1",
-  "description": "Check Zoho Attendance Data",
-  "permissions": ["storage", "alarms", "cookies", "notifications"],
-  "host_permissions": ["https://people.zoho.com/*"],
+  "name": "Attendance Tracker for Zoho People",
+  "version": "1.6.2",
+  "description": "Today's checkout targets, live countdowns, and monthly quota usage from Zoho People, with leave-on-time reminders.",
+  "permissions": [
+    "storage",
+    "alarms",
+    "cookies",
+    "notifications"
+  ],
+  "host_permissions": [
+    "https://people.zoho.com/*"
+  ],
   "background": {
     "service_worker": "background.js",
     "type": "module"

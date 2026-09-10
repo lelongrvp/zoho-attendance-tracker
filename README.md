@@ -60,6 +60,14 @@ header overrides that, and the choice is remembered in `chrome.storage.local`.
 
 ## Install
 
+Non-developers: see **INSTALL.md** (English + Tiếng Việt). The intended
+distribution channel is the Chrome Web Store as an *unlisted* extension —
+one-click install and automatic updates; `store/listing.md` is the complete
+submission kit and `scripts/package.sh` builds the store-ready zip from the
+committed tree.
+
+For development:
+
 1. Open `chrome://extensions` and turn on **Developer mode**.
 2. **Load unpacked**, then pick this directory.
 3. Sign in to <https://people.zoho.com/> in the same browser profile. The
@@ -151,6 +159,13 @@ computation, and reported in the worker console once per refresh — never
 guessed at, and never warned about once a second from the popup's timer loop.
 
 ## Release notes
+
+### 1.6.2 — 2026-09-10
+
+- Distribution: store submission kit (`store/listing.md`), bilingual install
+  guide (`INSTALL.md`), privacy policy (`PRIVACY.md`), and a reproducible
+  packaging script (`scripts/package.sh`). Renamed to "Attendance Tracker for
+  Zoho People" to comply with store trademark rules; sharper description.
 
 ### 1.6.1 — 2026-09-10
 

@@ -1,0 +1,23 @@
+#!/bin/zsh
+# Builds a Chrome Web Store-ready zip from the committed runtime files only —
+# no README, no .git, no OS junk. Uses git archive so the zip is reproducible
+# and never picks up uncommitted or untracked files.
+set -euo pipefail
+cd "$(dirname "$0")/.."
+
+git="/opt/homebrew/bin/git"
+version=$(python3 -c "import json; print(json.load(open('manifest.json'))['version'])")
+
+if [[ -n "$($git status --porcelain)" ]]; then
+  echo "warning: working tree is dirty — the zip is built from HEAD, not from unstaged changes" >&2
+fi
+
+mkdir -p dist
+out="dist/attendance-tracker-v${version}.zip"
+rm -f "$out"
+$git archive --format=zip -o "$out" HEAD -- \
+  manifest.json background.js popup.html popup.js policy.js i18n.js themes.js \
+  options.html options.js icon16.png icon48.png icon128.png
+
+echo "built $out"
+unzip -l "$out"

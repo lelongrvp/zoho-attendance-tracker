@@ -1,15 +1,29 @@
 {
   "manifest_version": 3,
   "name": "Zoho Attendance Checker",
-  "version": "1.0",
+  "version": "1.6.1",
   "description": "Check Zoho Attendance Data",
-  "permissions": ["storage", "alarms", "cookies"],
+  "permissions": ["storage", "alarms", "cookies", "notifications"],
   "host_permissions": ["https://people.zoho.com/*"],
   "background": {
-    "service_worker": "background.js"
+    "service_worker": "background.js",
+    "type": "module"
   },
   "action": {
     "default_popup": "popup.html",
-    "default_icon": "icon16.png"
+    "default_icon": {
+      "16": "icon16.png",
+      "48": "icon48.png",
+      "128": "icon128.png"
+    }
+  },
+  "icons": {
+    "16": "icon16.png",
+    "48": "icon48.png",
+    "128": "icon128.png"
+  },
+  "options_ui": {
+    "page": "options.html",
+    "open_in_tab": true
   }
 }

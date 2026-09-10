@@ -1,11 +1,16 @@
 import {
+  classifyNonWorkingDay,
   computeEffectiveTargets,
   computeWorkedTargets,
   describeAttendanceRequest,
   findActiveCheckin,
   hasAttendanceRequest,
   getCurrentCycle,
+  getCycleAt,
   isPastLateThreshold,
+  monthKey,
+  monthKeysInRange,
+  monthsAgoFor,
   pad,
   parseZohoTimestamp,
   readPolicy,
@@ -110,6 +115,9 @@ document.addEventListener("DOMContentLoaded", function () {
   const viewCalendarElem = document.getElementById("view-calendar");
   const calendarGridElem = document.getElementById("calendar-grid");
   const calendarLabelElem = document.getElementById("calendar-label");
+  const calendarNoteElem = document.getElementById("calendar-note");
+  const calendarPrevBtn = document.getElementById("cal-prev");
+  const calendarNextBtn = document.getElementById("cal-next");
 
   const refreshBtn = document.getElementById("refreshBtn");
   const themeBtn = document.getElementById("themeBtn");
@@ -125,6 +133,13 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   let policy = DEFAULT_POLICY;
+  // A year back is as far as the arrows go: further than that the cycle has
+  // long been closed, and every unseen month costs a request to Zoho.
+  const MIN_CALENDAR_OFFSET = -12;
+  let calendarOffset = 0;
+  let calendarDays = [];
+  let knownMonths = new Set();
+  const archiveRequests = new Set();
   let timerInterval = null;
   let activeDayEntries = null;
   let activeCheckinDate = null;
@@ -390,16 +405,52 @@ document.addEventListener("DOMContentLoaded", function () {
     tabCalendarBtn.classList.toggle("active", isCalendar);
   }
 
+  // One request per missing month, ever: the worker caches what it fetches,
+  // and a month that fails is not retried on every repaint of the same grid.
+  function requestArchiveMonth(key) {
+    if (archiveRequests.has(key)) {
+      return;
+    }
+    const monthsAgo = monthsAgoFor(key, new Date());
+    if (monthsAgo < 1) {
+      return;
+    }
+    archiveRequests.add(key);
+    chrome.runtime
+      .sendMessage({ action: "fetchArchiveMonth", monthsAgo })
+      .then((response) => {
+        if (response?.status !== "success") {
+          calendarNoteElem.textContent =
+            response?.message || translate("calFetchFailed");
+        }
+      })
+      .catch(() => {
+        calendarNoteElem.textContent = translate("calFetchFailed");
+      });
+  }
+
   // The whole cycle as a grid, straight from the cached dayList — future days
   // of the current month are already in the payload. Statuses beyond the ones
   // the quota logic understands are surfaced verbatim in the tooltip rather
   // than guessed at.
-  function renderCalendar(dayList) {
-    const { start, end } = getCurrentCycle(new Date(), policy);
+  function renderCalendar() {
+    const { start, end } = getCycleAt(new Date(), policy, calendarOffset);
     calendarLabelElem.textContent = `${start.getDate()} ${monthNames(activeLang)[start.getMonth()]} - ${end.getDate()} ${monthNames(activeLang)[end.getMonth()]}`;
+    calendarPrevBtn.disabled = calendarOffset <= MIN_CALENDAR_OFFSET;
+    calendarNextBtn.disabled = calendarOffset >= 0;
+
+    // A cycle the rolling two-month window never covered has to be fetched
+    // before it can be drawn. The grid renders empty meanwhile and repaints
+    // itself when the worker lands the month.
+    const missingMonths = monthKeysInRange(start, end).filter(
+      (key) => !knownMonths.has(key),
+    );
+    missingMonths.forEach(requestArchiveMonth);
+    calendarNoteElem.textContent =
+      missingMonths.length > 0 ? translate("calFetching") : "";
 
     const dayByKey = new Map();
-    Object.values(dayList).forEach((day) => {
+    calendarDays.forEach((day) => {
       const date = parseZohoTimestamp(day.orgdate);
       if (date && date >= start && date <= end) {
         dayByKey.set(toLocalDateKey(date), day);
@@ -443,7 +494,14 @@ document.addEventListener("DOMContentLoaded", function () {
         } else if (tsecs > 0) {
           cell.classList.add("low");
         } else {
-          cell.classList.add(isFuture ? "future" : "off");
+          // A labelled day off is not the same thing as a working day with
+          // nothing recorded against it, and only one of the two is a
+          // problem. An unrecognised status leaves the cell exactly as it
+          // rendered before this existed.
+          cell.classList.add(
+            classifyNonWorkingDay(day, policy) ||
+              (isFuture ? "future" : "off"),
+          );
         }
         if (tsecs > 0) {
           title += ` · ${(tsecs / 3600).toFixed(1)}h`;
@@ -645,13 +703,19 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   async function updateAttendanceDisplay() {
-    const { csrfToken, attendanceData, lastSuccessAt, lastError } =
-      await chrome.storage.local.get([
-        "csrfToken",
-        "attendanceData",
-        "lastSuccessAt",
-        "lastError",
-      ]);
+    const {
+      csrfToken,
+      attendanceData,
+      archivedMonths,
+      lastSuccessAt,
+      lastError,
+    } = await chrome.storage.local.get([
+      "csrfToken",
+      "attendanceData",
+      "archivedMonths",
+      "lastSuccessAt",
+      "lastError",
+    ]);
 
     renderFreshness(lastSuccessAt);
     requestBackgroundRefresh(csrfToken, lastSuccessAt);
@@ -671,7 +735,27 @@ document.addEventListener("DOMContentLoaded", function () {
 
     if (attendanceData.dayList) {
       renderCycleUsage(attendanceData.dayList);
-      renderCalendar(attendanceData.dayList);
+      // Quotas stay on the current cycle - they are about what is left to
+      // spend now - while the calendar can be walked back through archived
+      // months, so the two read from different day sets on purpose.
+      calendarDays = [
+        ...Object.values(archivedMonths || {}).flatMap((month) =>
+          Object.values(month.dayList || {}),
+        ),
+        ...Object.values(attendanceData.dayList),
+      ];
+      // Which months are covered is known exactly, not inferred from which
+      // days happen to be present: the worker's rolling window is always this
+      // month and last month, and anything else was archived whole. Inferring
+      // it from the data would read a month that merely overlaps the cycle as
+      // a month already fetched, and quietly draw the missing half empty.
+      const today = new Date();
+      knownMonths = new Set([
+        monthKey(today),
+        monthKey(new Date(today.getFullYear(), today.getMonth() - 1, 1)),
+        ...Object.keys(archivedMonths || {}),
+      ]);
+      renderCalendar();
     }
     renderTodayTimeline(attendanceData);
   }
@@ -725,10 +809,27 @@ document.addEventListener("DOMContentLoaded", function () {
       });
       return;
     }
-    if (changes.attendanceData || changes.lastSuccessAt || changes.lastError) {
+    if (
+      changes.attendanceData ||
+      changes.archivedMonths ||
+      changes.lastSuccessAt ||
+      changes.lastError
+    ) {
       updateAttendanceDisplay();
     }
   });
+
+  function stepCalendar(step) {
+    const next = Math.min(0, Math.max(MIN_CALENDAR_OFFSET, calendarOffset + step));
+    if (next === calendarOffset) {
+      return;
+    }
+    calendarOffset = next;
+    renderCalendar();
+  }
+
+  calendarPrevBtn.addEventListener("click", () => stepCalendar(-1));
+  calendarNextBtn.addEventListener("click", () => stepCalendar(1));
 
   tabAttendanceBtn.addEventListener("click", () => {
     setActiveTab("attendance");

@@ -1,6 +1,7 @@
 import {
   DEFAULT_POLICY,
   DEFAULT_PORTAL_ID,
+  collectStatuses,
   pad,
   readPolicy,
 } from "./policy.js";
@@ -110,6 +111,32 @@ async function applyStoredTheme() {
   }
 }
 
+const listFields = {
+  "holiday-statuses": "holidayStatuses",
+  "weekend-statuses": "weekendStatuses",
+};
+
+// The keyword lists above are guesses until someone looks at a real payload,
+// so the page shows what this portal actually sends rather than asking the
+// user to open the service worker console to find out.
+async function showStatusesSeen() {
+  const { attendanceData, archivedMonths } = await chrome.storage.local.get([
+    "attendanceData",
+    "archivedMonths",
+  ]);
+  const days = [
+    ...Object.values(attendanceData?.dayList || {}),
+    ...Object.values(archivedMonths || {}).flatMap((month) =>
+      Object.values(month.dayList || {}),
+    ),
+  ];
+  const seen = collectStatuses(days);
+  document.getElementById("statuses-seen").textContent =
+    seen.length > 0
+      ? seen.map((entry) => `${entry.status} (${entry.count})`).join(", ")
+      : "nothing cached yet - open the popup once";
+}
+
 async function loadForm() {
   const policy = await readPolicy();
   const { portalId } = await chrome.storage.local.get("portalId");
@@ -136,6 +163,10 @@ async function loadForm() {
   for (const [inputId, key] of Object.entries(timeFields)) {
     document.getElementById(inputId).value = minutesToTimeValue(policy[key]);
   }
+  for (const [inputId, key] of Object.entries(listFields)) {
+    document.getElementById(inputId).value = (policy[key] || []).join(", ");
+  }
+  await showStatusesSeen();
 }
 
 function showStatus(message, isError = false) {
@@ -170,6 +201,14 @@ async function save() {
     }
     policy[key] = timeValueToMinutes(value);
   }
+  for (const [inputId, key] of Object.entries(listFields)) {
+    policy[key] = document
+      .getElementById(inputId)
+      .value.split(",")
+      .map((word) => word.trim())
+      .filter(Boolean);
+  }
+
   const targetMode = document.getElementById("target-mode").value;
   if (targetMode !== "offset" && targetMode !== "worked") {
     showStatus("Invalid target model", true);

@@ -4,6 +4,7 @@ import {
   isPastLateThreshold,
   isPlaceholderTime,
   isUsablePayload,
+  monthKey,
   pad,
   parseZohoTimestamp,
   readPolicy,
@@ -180,6 +181,47 @@ async function refreshAttendance() {
     });
     throw error;
   }
+}
+
+// Months outside the rolling two-month window the rest of the extension runs
+// on, fetched only when the calendar is actually navigated back to them and
+// kept in their own store: refreshAttendance() replaces attendanceData
+// wholesale every 15 minutes, so anything archived alongside it would be
+// thrown away twice an hour. Only dayList is kept - the calendar reads tsecs
+// and status, and nothing outside the current cycle needs punch entries.
+const MAX_ARCHIVE_MONTHS_AGO = 24;
+
+async function fetchArchiveMonth(monthsAgo) {
+  if (
+    !Number.isInteger(monthsAgo) ||
+    monthsAgo < 1 ||
+    monthsAgo > MAX_ARCHIVE_MONTHS_AGO
+  ) {
+    throw new Error(`Refusing to fetch ${monthsAgo} months back`);
+  }
+
+  const csrfToken = await syncCsrfToken();
+  if (!csrfToken) {
+    throw new Error("Not signed in to Zoho People");
+  }
+
+  const portalId = await readPortalId();
+  const url = `https://people.zoho.com/${portalId}/AttendanceViewAction.zp`;
+  const month = await fetchMonth(url, csrfToken, monthsAgo);
+  if (!isUsablePayload(month)) {
+    throw new Error("Zoho returned an unrecognised payload for that month");
+  }
+
+  const now = new Date();
+  const key = monthKey(
+    new Date(now.getFullYear(), now.getMonth() - monthsAgo, 1),
+  );
+  const { archivedMonths = {} } =
+    await chrome.storage.local.get("archivedMonths");
+  await chrome.storage.local.set({
+    archivedMonths: { ...archivedMonths, [key]: { dayList: month.dayList } },
+  });
+  return key;
 }
 
 // Fire-and-forget callers can't surface a rejection, and the popup reads
@@ -478,12 +520,19 @@ chrome.storage.onChanged.addListener(async (changes, area) => {
 });
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  if (request.action !== "updateAttendance") {
+  const work =
+    request.action === "updateAttendance"
+      ? refreshAttendance()
+      : request.action === "fetchArchiveMonth"
+        ? fetchArchiveMonth(request.monthsAgo)
+        : null;
+
+  if (!work) {
     return false;
   }
 
-  refreshAttendance()
-    .then(() => sendResponse({ status: "success" }))
+  work
+    .then((result) => sendResponse({ status: "success", result }))
     .catch((error) =>
       sendResponse({ status: "error", message: error.message }),
     );

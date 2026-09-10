@@ -118,6 +118,14 @@
         color: var(--ink-2);
       }
 
+      .seen-list {
+        font-family: var(--font-num);
+        font-size: 12px;
+        color: var(--ink-2);
+        text-align: right;
+        max-width: 50%;
+      }
+
       .field .hint {
         display: block;
         font-size: 11px;
@@ -142,7 +150,9 @@
         width: 130px;
       }
 
-      input#portal-id {
+      input#portal-id,
+      input#holiday-statuses,
+      input#weekend-statuses {
         width: 240px;
         text-align: left;
       }
@@ -299,6 +309,37 @@
             ></label
           >
           <input type="text" id="portal-id" spellcheck="false" />
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Day statuses</legend>
+        <div class="field">
+          <label for="holiday-statuses"
+            >Holiday keywords<span class="hint"
+              >comma-separated, matched anywhere in the day's status, case
+              insensitive</span
+            ></label
+          >
+          <input type="text" id="holiday-statuses" spellcheck="false" />
+        </div>
+        <div class="field">
+          <label for="weekend-statuses"
+            >Weekend keywords<span class="hint"
+              >days off that need no explanation, kept apart from a working
+              day with nothing recorded</span
+            ></label
+          >
+          <input type="text" id="weekend-statuses" spellcheck="false" />
+        </div>
+        <div class="field seen">
+          <label
+            >Statuses in your cached data<span class="hint"
+              >what this portal actually sends - match the keywords above to
+              these</span
+            ></label
+          >
+          <span id="statuses-seen" class="seen-list"></span>
         </div>
       </fieldset>
 

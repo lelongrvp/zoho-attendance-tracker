@@ -18,6 +18,15 @@ export const DEFAULT_POLICY = {
   targetMode: "offset",
   shortDayQuota: 5,
   requestQuota: 3,
+  // Non-working days arrive labelled in the same `status` field that carries
+  // "Absent" - the one status string the original code matched, so that much
+  // was observed live. Which word this portal uses for a public holiday is
+  // not confirmed, which is why these are policy and not constants: matching
+  // is case-insensitive on a substring, so "Weekend/Holiday", "Public
+  // Holiday" and "Weekly Off" all land, and a portal running in Vietnamese
+  // can be taught its own words from the options page.
+  holidayStatuses: ["holiday", "ngày lễ", "nghỉ lễ"],
+  weekendStatuses: ["weekend", "week off", "weekly off", "off day"],
   violationQuota: 3,
   staleAfterMinutes: 30,
 };
@@ -366,4 +375,93 @@ export function describeAttendanceRequest(day) {
   const info = day.approvalInfo;
   const text = typeof info === "string" ? info.trim() : JSON.stringify(info);
   return text.length > 120 ? `${text.slice(0, 117)}...` : text;
+}
+
+// Holiday is tested first on purpose: a status like "Weekend/Holiday" means a
+// holiday that happens to land on a weekend, and the holiday is the more
+// informative of the two labels. Returns "" for anything unmatched, which
+// leaves the day rendering exactly as it did before this existed.
+export function classifyNonWorkingDay(day, policy) {
+  const status = (day?.status || "").trim().toLowerCase();
+  if (!status) {
+    return "";
+  }
+  const matches = (words) =>
+    (words || []).some((word) => {
+      const needle = String(word).trim().toLowerCase();
+      return needle !== "" && status.includes(needle);
+    });
+  if (matches(policy.holidayStatuses)) {
+    return "holiday";
+  }
+  if (matches(policy.weekendStatuses)) {
+    return "weekend";
+  }
+  return "";
+}
+
+// Distinct status strings in the cache, most frequent first. The options page
+// shows these so the keyword lists above can be matched against what this
+// portal actually sends, rather than against what this file guesses it sends.
+export function collectStatuses(dayList) {
+  const counts = new Map();
+  Object.values(dayList || {}).forEach((day) => {
+    const status = (day?.status || "").trim();
+    if (status !== "") {
+      counts.set(status, (counts.get(status) || 0) + 1);
+    }
+  });
+  return [...counts.entries()]
+    .sort((first, second) => second[1] - first[1])
+    .map(([status, count]) => ({ status, count }));
+}
+
+// The cycle `offset` cycles away from the one containing `now`; 0 is current,
+// -1 the previous one. Shifting the start date by whole months is safe
+// because cycleStartDay is a day every month has.
+export function getCycleAt(now, policy, offset) {
+  const current = getCurrentCycle(now, policy);
+  if (offset === 0) {
+    return current;
+  }
+  const start = new Date(
+    current.start.getFullYear(),
+    current.start.getMonth() + offset,
+    policy.cycleStartDay,
+  );
+  return {
+    start,
+    end: new Date(
+      start.getFullYear(),
+      start.getMonth() + 1,
+      policy.cycleStartDay - 1,
+      23,
+      59,
+      59,
+    ),
+  };
+}
+
+export function monthKey(date) {
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}`;
+}
+
+// Every calendar month a cycle touches - two of them, unless cycleStartDay is
+// 1. Used to work out which months a past cycle needs before it can render.
+export function monthKeysInRange(start, end) {
+  const keys = [];
+  const cursor = new Date(start.getFullYear(), start.getMonth(), 1);
+  const last = new Date(end.getFullYear(), end.getMonth(), 1);
+  while (cursor <= last) {
+    keys.push(monthKey(cursor));
+    cursor.setMonth(cursor.getMonth() + 1);
+  }
+  return keys;
+}
+
+// How many months back from now a month key sits, which is exactly the
+// `preMonth` value Zoho's endpoint takes.
+export function monthsAgoFor(key, now) {
+  const [year, month] = key.split("-").map(Number);
+  return now.getFullYear() * 12 + now.getMonth() - (year * 12 + month - 1);
 }

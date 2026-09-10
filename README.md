@@ -49,7 +49,11 @@ set in the Gruvbox palette, light and dark.
 - **Calendar tab** — the popup has two tabs, Attendance and Calendar. The
   calendar renders the whole payroll cycle as a grid from the same cached data:
   full days in ink, 6-8h days grey, sub-6h days red, leave green, absences
-  tinted, future days dashed, today ringed. A day carrying an attendance
+  tinted, days off hatched (holiday) or washed (weekend), future days dashed,
+  today ringed. The arrows beside the label walk back through past cycles: a
+  cycle outside the rolling two-month window is fetched from Zoho once, cached
+  under its own month key, and instant on every later visit. A day carrying an
+  attendance
   request gets an amber corner dot, orthogonal to the hours because those
   already own the cell's colour, and its tooltip carries the request's raw
   contents. Statuses the quota logic does not understand are shown verbatim in
@@ -116,10 +120,24 @@ chrome.storage.local.set({ policy: { shortDayQuota: 6, cycleStartDay: 1 } });
 Changing the policy re-arms the notification gates and redraws the badge
 immediately, with no refetch.
 
+**Day statuses.** `holidayStatuses` and `weekendStatuses` are keyword lists
+matched case-insensitively anywhere in a day's `status`, so "Weekend/Holiday",
+"Public Holiday" and "Weekly Off" all land without listing every variant.
+Holiday is tested first, and an unmatched status leaves the day rendering as
+it always did. The options page shows the distinct statuses in your cached
+data, with counts, so the lists can be matched to what this portal really
+sends rather than to what `policy.js` guesses it sends.
+
 ## Known limitations
 
-- Only the current and previous month are fetched, which is exactly enough for
-  the 21st-to-20th cycle and nothing more.
+- Only the current and previous month are fetched on a refresh, which is
+  exactly enough for the 21st-to-20th cycle. Older months are fetched only
+  when the calendar is actually navigated back to them, one request per month,
+  a year back at most.
+- Holidays and weekends are recognised from the day's `status` text, so a
+  holiday Zoho does not label is just an empty day. The keywords are editable
+  on the options page, which also lists the status strings your portal
+  actually sends.
 - The default target model is check-in plus a fixed offset, which assumes your
   break is the standard 1.25 hours. The popup also computes a **worked-hours**
   projection from the day's raw entries (check-in/check-out pairs or alternating
@@ -199,8 +217,10 @@ page: copy the data call's URL + payload here and the worker/cache/render
 pattern is identical to attendance.
 
 - **Leave balances** by type (leave page capture).
-- **Upcoming holidays** (holidays page capture — often the same response as
-  leave, may come free with it).
+- **Upcoming holidays with names** (holidays page capture — often the same
+  response as leave, may come free with it). Holidays already in the
+  attendance payload are marked on the calendar as of 1.8.0; a dedicated
+  endpoint would add the holiday's name and dates beyond the cached months.
 - **Team: who's out today** (team/colleagues page capture).
 
 ### Polish, whenever
@@ -224,9 +244,12 @@ pattern is identical to attendance.
   endpoint, scraped token, consequences land on a real HR record.
 - **Content script on people.zoho.com**: more permissions and breakage surface
   for nothing the existing endpoint doesn't provide.
-- **Fetching more than two months**: exactly two are needed for the
-  21st-to-20th cycle; more is extra load on an internal endpoint for history
-  rarely viewed.
+- ~~**Fetching more than two months**~~ — revisited in 1.8.0. Two months are
+  still all a refresh fetches; the calendar's back-arrows fetch one extra
+  month on demand, cache it under its own key, and never refetch it. The
+  original objection (load on an internal endpoint for history nobody looks
+  at) holds for fetching history nobody asked for, not for a month the user
+  just navigated to.
 - **`chrome.storage.sync`**: single user, single machine; adds write quotas.
 - **Charting library / build step / TypeScript**: MV3 CSP forbids remote
   scripts and the no-tooling property is a feature at this size.
@@ -234,6 +257,24 @@ pattern is identical to attendance.
   keep working; they write the same storage keys.
 
 ## Release notes
+
+### 1.8.0 — 2026-09-10
+
+- The calendar navigates: arrows beside the label step a whole payroll cycle
+  at a time, up to a year back. A cycle the rolling two-month window never
+  covered is fetched from Zoho once, stored under its own month key in a
+  separate `archivedMonths` store — separate because a refresh replaces
+  `attendanceData` wholesale twice an hour and would otherwise throw the
+  archive away with it — and is instant on every later visit. Quotas stay on
+  the current cycle; they are about what is left to spend now.
+- Holidays and weekends are read off the day's `status` and rendered
+  distinctly: a holiday is hatched, a weekend washed, and a working day with
+  nothing recorded still reads as empty — which is the one of the three that
+  is actually a problem. Keywords are matched case-insensitively anywhere in
+  the status ("Weekend/Holiday" counts as a holiday) and are editable on the
+  options page, which now also lists the status strings your portal actually
+  sends, with counts, so the lists can be matched to reality instead of to a
+  guess in `policy.js`.
 
 ### 1.7.0 — 2026-09-10
 

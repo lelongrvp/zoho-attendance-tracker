@@ -209,13 +209,30 @@ async function fetchArchiveMonth(monthsAgo) {
   const url = `https://people.zoho.com/${portalId}/AttendanceViewAction.zp`;
   const month = await fetchMonth(url, csrfToken, monthsAgo);
   if (!isUsablePayload(month)) {
-    throw new Error("Zoho returned an unrecognised payload for that month");
+    throw new Error("Zoho returned no attendance for that month");
   }
 
   const now = new Date();
   const key = monthKey(
     new Date(now.getFullYear(), now.getMonth() - monthsAgo, 1),
   );
+
+  // `preMonth` is how the endpoint addresses history, and how far back it
+  // honours is not documented. Caching whatever came back under the key that
+  // was asked for would draw another month's days as if they were this one -
+  // the exact class of confident wrong answer this extension refuses
+  // everywhere else. So check what arrived before trusting the label.
+  const returned = new Set(
+    Object.values(month.dayList)
+      .map((day) => parseZohoTimestamp(day.orgdate))
+      .filter(Boolean)
+      .map(monthKey),
+  );
+  if (!returned.has(key)) {
+    throw new Error(
+      `Asked Zoho for ${key}, got ${[...returned].join(", ") || "nothing"} — this endpoint may not reach back that far`,
+    );
+  }
   const { archivedMonths = {} } =
     await chrome.storage.local.get("archivedMonths");
   await chrome.storage.local.set({

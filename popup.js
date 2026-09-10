@@ -140,6 +140,7 @@ document.addEventListener("DOMContentLoaded", function () {
   let calendarDays = [];
   let knownMonths = new Set();
   const archiveRequests = new Set();
+  const archiveFailures = new Map();
   let timerInterval = null;
   let activeDayEntries = null;
   let activeCheckinDate = null;
@@ -407,6 +408,10 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // One request per missing month, ever: the worker caches what it fetches,
   // and a month that fails is not retried on every repaint of the same grid.
+  // Why the failure is remembered rather than written straight to the note:
+  // any storage change repaints the grid, and a note set here would be
+  // overwritten by that repaint with "loading" for a month no longer being
+  // fetched — leaving a spinner that never resolves and never explains.
   function requestArchiveMonth(key) {
     if (archiveRequests.has(key)) {
       return;
@@ -420,13 +425,23 @@ document.addEventListener("DOMContentLoaded", function () {
       .sendMessage({ action: "fetchArchiveMonth", monthsAgo })
       .then((response) => {
         if (response?.status !== "success") {
-          calendarNoteElem.textContent =
-            response?.message || translate("calFetchFailed");
+          archiveFailures.set(
+            key,
+            response?.message || translate("calFetchFailed"),
+          );
+          renderCalendar();
         }
       })
       .catch(() => {
-        calendarNoteElem.textContent = translate("calFetchFailed");
+        archiveFailures.set(key, translate("calFetchFailed"));
+        renderCalendar();
       });
+  }
+
+  // Clears the "asked once" bookkeeping so the visible cycle is tried again.
+  function retryArchive() {
+    archiveRequests.clear();
+    archiveFailures.clear();
   }
 
   // The whole cycle as a grid, straight from the cached dayList — future days
@@ -441,13 +456,22 @@ document.addEventListener("DOMContentLoaded", function () {
 
     // A cycle the rolling two-month window never covered has to be fetched
     // before it can be drawn. The grid renders empty meanwhile and repaints
-    // itself when the worker lands the month.
-    const missingMonths = monthKeysInRange(start, end).filter(
-      (key) => !knownMonths.has(key),
+    // itself when the worker lands the month. A month in the future is not
+    // missing — nothing has happened in it yet — and asking Zoho for one is
+    // meaningless, so it must not read as perpetually loading either: from
+    // the 21st onward the current cycle always reaches into next month.
+    const today = new Date();
+    const cycleMonths = monthKeysInRange(start, end);
+    const fetchable = cycleMonths.filter(
+      (key) => !knownMonths.has(key) && monthsAgoFor(key, today) >= 1,
     );
-    missingMonths.forEach(requestArchiveMonth);
-    calendarNoteElem.textContent =
-      missingMonths.length > 0 ? translate("calFetching") : "";
+    fetchable.forEach(requestArchiveMonth);
+    const failedMonth = cycleMonths.find((key) => archiveFailures.has(key));
+    calendarNoteElem.textContent = failedMonth
+      ? archiveFailures.get(failedMonth)
+      : fetchable.length > 0
+        ? translate("calFetching")
+        : "";
 
     const dayByKey = new Map();
     calendarDays.forEach((day) => {
@@ -851,6 +875,9 @@ document.addEventListener("DOMContentLoaded", function () {
 
   refreshBtn.addEventListener("click", async function () {
     refreshBtn.classList.add("spinning");
+    // Refresh means "try again" for whatever the calendar is showing too, or
+    // a month that failed once would stay failed for the life of the popup.
+    retryArchive();
 
     try {
       const response = await chrome.runtime.sendMessage({

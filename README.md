@@ -165,6 +165,12 @@ chrome.storage.local.get("attendanceData", (d) =>
 );
 ```
 
+- `preMonth` addresses history as "how many months back", and how far back the
+  endpoint honours it is unknown — the original code only ever asked for 0 and
+  1. The calendar's back-arrows ask for more. A month that comes back for the
+  wrong period is now refused rather than cached under the label that was
+  asked for, so the failure is visible in the calendar's note instead of
+  showing another month's days as if they were this one.
 - `approvalInfo` being present means an attendance request. Emptiness is now
   handled - an empty object, empty array or blank string no longer counts as a
   used request - but what the field means is still inferred. The calendar puts
@@ -403,6 +409,20 @@ and UI shipped in 1.4.0; only the default is conservative.
   keep working; they write the same storage keys.
 
 ## Release notes
+
+### 1.8.2 — 2026-09-10
+
+- A month Zoho answers with the wrong period is refused instead of cached
+  under the label that was asked for. `preMonth` is undocumented past 1, and
+  the calendar's back-arrows ask for more than that; the error now names both
+  the month requested and the month received.
+- The calendar no longer claims to be loading a month it will never ask for.
+  From the 21st onward the current cycle reaches into next month, and a future
+  month is not missing data — it has none yet.
+- A month that fails to load says why, and keeps saying it. The failure was
+  previously written straight to the note, so the next repaint — any storage
+  change causes one — replaced it with "loading" for a fetch that was no
+  longer running. The refresh button now also retries a failed month.
 
 ### 1.8.1 — 2026-09-10
 

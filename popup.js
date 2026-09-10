@@ -510,14 +510,12 @@ document.addEventListener("DOMContentLoaded", function () {
         if (statusText) {
           title += ` · ${statusText}`;
         }
-        // A request is orthogonal to the hours worked, which already own the
-        // cell's colour, so it gets its own channel: a corner mark taken out
-        // of flow, leaving the date sitting exactly where every other date
-        // sits. What the request actually says rides along in the tooltip.
+        // A request takes the whole cell: it outranks the hours bucket,
+        // because a day that needed one is the thing worth spotting in the
+        // grid. The hours are still in the tooltip, with whatever the request
+        // itself says.
         if (hasAttendanceRequest(day)) {
-          const marker = document.createElement("i");
-          marker.className = "req-dot";
-          cell.appendChild(marker);
+          cell.classList.add("request");
           title += ` · ${translate("calRequest")}`;
           const detail = describeAttendanceRequest(day);
           if (detail) {

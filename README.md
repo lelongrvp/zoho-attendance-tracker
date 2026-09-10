@@ -50,15 +50,14 @@ set in the Gruvbox palette, light and dark.
   calendar renders the whole payroll cycle as a grid from the same cached data:
   full days in ink, 6-8h days grey, sub-6h days red, leave green, absences
   tinted, days off hatched (holiday) or washed (weekend), future days dashed,
-  today ringed. The arrows beside the label walk back through past cycles: a
+  today ringed. A day carrying an attendance request is filled amber, which
+  outranks its hours bucket because a day that needed a request is the one
+  worth spotting in the grid; the hours and the request's own raw contents are
+  in the tooltip. The arrows beside the label walk back through past cycles: a
   cycle outside the rolling two-month window is fetched from Zoho once, cached
-  under its own month key, and instant on every later visit. A day carrying an
-  attendance
-  request gets an amber corner dot, orthogonal to the hours because those
-  already own the cell's colour, and its tooltip carries the request's raw
-  contents. Statuses the quota logic does not understand are shown verbatim in
-  each cell's tooltip rather than interpreted.
-  The active tab is remembered.
+  under its own month key, and instant on every later visit. Statuses the quota
+  logic does not understand are shown verbatim in each cell's tooltip rather
+  than interpreted. The active tab is remembered.
 - **Stale-while-revalidate** — the popup always paints instantly from cache,
   then quietly asks the worker for fresh data if the cache is older than five
   minutes; the display repaints on its own when the answer lands. The header
@@ -257,6 +256,13 @@ pattern is identical to attendance.
   keep working; they write the same storage keys.
 
 ## Release notes
+
+### 1.8.1 — 2026-09-10
+
+- Attendance-request days are filled amber across the whole cell instead of
+  carrying a corner dot: the request outranks the hours bucket in the grid,
+  and the hours stay in the tooltip. Today's ring switches to `--on-amber` on
+  those cells, since an amber ring on an amber cell is no ring at all.
 
 ### 1.8.0 — 2026-09-10
 

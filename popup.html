@@ -811,7 +811,6 @@
       }
 
       .cal-cell {
-        position: relative;
         height: 34px;
         display: grid;
         place-items: center;
@@ -889,6 +888,14 @@
         color: var(--ink-faint);
       }
 
+      /* Last of the fills on purpose: same specificity as the buckets above,
+           so source order is what lets a request outrank the hours. */
+      .cal-cell.request {
+        background: var(--amber);
+        border-color: var(--amber);
+        color: var(--on-amber);
+      }
+
       /* Inset ring: paints inside the cell, so every date keeps exactly the
            same box and the grid stays flush — today differs by colour only. */
       .cal-cell.today {
@@ -896,17 +903,12 @@
         box-shadow: inset 0 0 0 1.5px var(--amber);
       }
 
-      /* Out of flow deliberately: the date must not shift to make room for
-           the mark, and the cell's colour is already spoken for by the hours. */
-      .req-dot {
-        position: absolute;
-        top: 3px;
-        right: 3px;
-        width: 5px;
-        height: 5px;
-        border-radius: 50%;
-        background: var(--amber);
-        box-shadow: 0 0 0 1px var(--paper);
+      /* An amber ring on an amber cell is no ring at all, and in dark mode
+           --ink is a pale cream that barely reads on it either. --on-amber is
+           the token that exists precisely to sit on this colour. */
+      .cal-cell.today.request {
+        border-color: var(--on-amber);
+        box-shadow: inset 0 0 0 1.5px var(--on-amber);
       }
 
       .cal-legend {
@@ -980,11 +982,7 @@
         color: var(--ink-faint);
       }
 
-      .cal-legend i.sw-request {
-        width: 7px;
-        height: 7px;
-        margin: 0 1.5px;
-        border-radius: 50%;
+      .sw-request {
         background: var(--amber);
       }
 

@@ -185,56 +185,201 @@ guessed at, and never warned about once a second from the popup's timer loop.
 
 ## Roadmap
 
-Reference for future upgrades, in rough priority order. Items marked **gated**
-need a specific action (listed) before they can be built.
+The 1.8 line ends at the Chrome Web Store: 1.8.9 is the unlisted release, and
+everything before it exists because the extension is about to be used by
+people who did not write it, on machines nobody debugged it on, in a language
+half of them read faster than English. 1.9.0 is a different kind of change —
+the vanilla HTML/CSS/JS front end converted to a framework — and it comes
+after the release on purpose, so the rewrite has real users and a real test
+suite to answer to.
 
-### Next
+Steps marked **you** cannot be done from this repo: they need a live Zoho
+session, an account, or a decision.
 
-1. **Ship to the Chrome Web Store (unlisted).** All materials are in-repo; the
-   remaining steps are manual: push this repo to a remote you own, host
-   `PRIVACY.md` at a public URL, register the $5 developer account, take
-   screenshots on a real account (blur names), upload
-   `scripts/package.sh`'s zip, set visibility Unlisted. If the team runs
-   managed Chrome, ask IT about `ExtensionInstallForcelist` instead — it
-   removes even the install click.
-2. **Flip the target model to worked hours** — gated on observation, not code:
-   watch the popup's "Worked …" line for about a week; if it never turns red
-   against real days, switch **Target model** on the options page to "Hours
-   actually worked". The model, tests, and UI are already shipped (v1.4.0);
-   only the default is conservative.
-3. **Verify `approvalInfo`** — the last unverified payload assumption, and it
-   feeds the requests quota. Run the console one-liner in *Unverified
-   assumptions* above on a day that has an approval record and check whether
-   the field is a meaningful object or an always-present `{}`. If the latter,
-   the requests counter needs a real predicate.
+### 1.8.2 — Truth pass
 
-### Gated on a DevTools capture
+Two payload assumptions are still guesses. Both now report themselves from the
+UI instead of the console, so this version is mostly reading, then acting.
 
-Each of these becomes a new popup tab (the tab bar already exists) once one
-request is captured from Zoho with DevTools → Network open on the relevant
-page: copy the data call's URL + payload here and the worker/cache/render
-pattern is identical to attendance.
+- **you** — open the Calendar tab on a day you filed an attendance request and
+  hover it. The tooltip prints the raw `approvalInfo`. Paste it here.
+- **you** — open the options page and read *Statuses in your cached data*.
+  That line is the ground truth for the holiday and weekend keyword lists.
+- Then: replace the guessed keyword defaults with what the portal actually
+  sends, and turn the verbatim `approvalInfo` dump into a real label if the
+  shape carries one (reason, filed date, approver). If it turns out to be an
+  always-present empty object, the requests quota needs a different predicate
+  altogether — far better to learn that now than after other people are
+  counting on the number.
+- Done when nothing in *Unverified assumptions* is still marked unverified.
+
+### 1.8.3 — The tests move into the repo
+
+Ten worker suites, a DOM-contract check and the render harnesses have carried
+every change in this project so far, and all of them currently live in a
+session scratchpad under `/private/tmp`. That directory is temporary. The
+suites are also the only thing that will make the 1.9.0 rewrite safe, so they
+have to exist somewhere permanent before anything depends on them.
+
+- `test/worker/*.mjs` — the ten node suites (gates, badge, parsing, worked
+  model, archive fetch), runnable with plain `node`, no dependencies.
+- `test/contract.sh` — the ID/class/CSP/container check that catches a popup
+  referencing something the HTML no longer has.
+- `test/render/` — the stub-plus-headless-Chrome harness, including the
+  measurement that compares rendered glyph positions rather than boxes.
+- `scripts/test.sh` runs all of it and exits non-zero on the first failure.
+- Excluded from the packaged zip, which lists runtime files explicitly.
+- Done when `./scripts/test.sh` is the one command that proves a change is
+  safe, on a machine that has only cloned this repo.
+
+### 1.8.4 — Vietnamese everywhere
+
+The popup and its notifications are bilingual. Three places are not, and an
+ordinary user hits all three.
+
+- **Options page**: every label, hint and validation message is English. It
+  needs the `data-i18n` treatment the popup already has, following the `lang`
+  key the popup writes rather than carrying its own switch.
+- **Worker error messages** surface verbatim in the alert strip — "Not signed
+  in to Zoho People", "Zoho returned HTTP 500", "the session has probably
+  expired". These are exactly the strings a stuck user reads. Store a code and
+  parameters in `lastError` and translate at render time, not at throw time:
+  the language can change after the error is stored, and the popup is where
+  the language is known.
+- **Store listing**: `store/listing.md` is English and the audience is not. A
+  Vietnamese description is a listing field, not a code change.
+- Done when switching to VI leaves no English string visible in the popup, the
+  options page, or any error state.
+
+### 1.8.5 — Fit and finish on someone else's machine
+
+- **Worst-case popup height is ~609px** (alert plus over-quota plus violations
+  at once), 9px past Chrome's no-scroll budget. On a stranger's machine that
+  is a scrollbar across the most important number.
+- **First run in a different org.** `portalId` defaults to one portal; anyone
+  installing from the shared link elsewhere gets a fetch error with no hint
+  that the fix is one field on the options page. Say so in the error.
+- **The VI freshness stamp** can wrap to two lines in the masthead.
+- **Keyboard**: left/right should step the calendar while that tab is active,
+  and every control needs a visible focus ring, including the new arrows.
+- Done when a fresh Chrome profile, given only the zip, gets from install to a
+  correct countdown without anyone opening the console.
+
+### 1.8.6 — Archives that stay true
+
+- **A month fetched by the back arrows is cached forever**, so an HR
+  correction to a closed cycle never appears. Give the refresh button a second
+  job while a past cycle is on screen — refetch that month — or expire
+  archives after a week.
+- **Nothing prunes `archivedMonths`.** Bounded by the twelve-cycle limit, so
+  it is small, but it should drop what falls outside that window rather than
+  relying on the limit never changing.
+- **A failed archive write** (storage full, most plausibly) reaches the popup
+  as "Could not load that cycle", which points at Zoho for something that
+  happened locally. Distinguish the two, since the fixes are nothing alike.
+- Done when a corrected past day shows the correction, and no cache can grow
+  without a bound.
+
+### 1.8.7 — Release engineering
+
+- **Packaging guard.** `scripts/package.sh` lists its twelve runtime files by
+  hand. A file added and forgotten is a zip that installs and then fails at
+  runtime, and the only thing between that and a shared link is someone
+  remembering. Make the script check the zip against everything
+  `manifest.json` and the HTML reference, and fail loudly.
+- **Version consistency.** `manifest.json` and the top release-note heading
+  must agree; the script should refuse to build when they do not.
+- **Clean-profile smoke test**, written down as steps: fresh profile, load the
+  zip unpacked, sign in, confirm badge countdown, notification at a gate,
+  options round-trip, calendar back one cycle.
+- Done when building a release candidate is one command and one checklist.
+
+### 1.8.8 — Store assets
+
+- **Screenshots** (1280×800, up to five): generated from the render harness on
+  synthetic data rather than from a real account — nothing to blur, and both
+  themes and both languages in one pass.
+- **Small promo tile** (440×280) from the same brand mark as the icons.
+- **you** — host `PRIVACY.md` at a public URL. The store wants a link, not a
+  file: a repo you own, a Gist, or any static page. This repo has no remote,
+  and the original author's remote is not yours to push to.
+- Listing text finalised in `store/listing.md`, EN and VI.
+- Done when every field and asset the dashboard asks for exists before the
+  dashboard is opened.
+
+### 1.8.9 — Chrome Web Store, unlisted
+
+- **you** — register the developer account ($5, one-time), upload the zip from
+  `scripts/package.sh`, paste the fields from `store/listing.md`, set
+  visibility **Unlisted**, submit. Unlisted still goes through review; the
+  per-permission justifications (`cookies`, `host_permissions`) are already
+  written there because they are what a reviewer asks about.
+- Then: share the link, and demote `INSTALL.md`'s manual path to a footnote —
+  the whole point of the release is that nobody needs it.
+- Done when the link installs a working extension on a machine that has never
+  seen this repo.
+
+### 1.9.0 — Framework conversion
+
+A separate track, deliberately after the release. The front end (popup and
+options) moves to a framework; the service worker does not — MV3's worker is
+an event handler with no DOM, and a framework buys it nothing.
+
+Before starting:
+
+- 1.8.3's test suite is the contract. The rewrite is correct when
+  `./scripts/test.sh` passes unchanged, which means the worker suites must not
+  be rewritten alongside the UI — they are what proves the behaviour survived.
+- The DOM-contract check has to be replaced with something equivalent for
+  components, or the rewrite loses the guarantee that the popup and its markup
+  agree.
+
+Constraints the choice has to respect:
+
+- **MV3 CSP forbids remote scripts and `eval`**, so everything ships bundled
+  and self-contained. This overrides the "no build step" decision below; that
+  entry is superseded the moment this version starts.
+- **The popup must still paint from cache instantly.** Today it renders cached
+  data on the first frame and revalidates behind it. A framework that pays
+  hydration cost before first paint would trade away the property the whole
+  design is built on — measure it, do not assume it.
+- **Themes stay as they are.** `themes.js` resolves CSS custom properties;
+  that layer is framework-agnostic and should survive untouched, along with
+  the light/dark/scheme/custom cascade.
+- **i18n stays data-driven.** The string tables move behind a hook or context;
+  the tables themselves do not change.
+
+The pick is deferred, but the shape of it is not: React with a build step is
+the conventional answer and fine here; Preact is the same programming model at
+a fraction of the bundle, which matters for a popup whose entire budget is one
+frame. Decide it on the first-paint measurement, not on familiarity.
+
+### After the 1.8 line
+
+**Gated on a DevTools capture.** Each becomes a new popup tab (the tab bar
+already exists) once one request is captured from Zoho with DevTools → Network
+open on the relevant page: copy the data call's URL and payload here, and the
+worker/cache/render pattern is identical to attendance.
 
 - **Leave balances** by type (leave page capture).
 - **Upcoming holidays with names** (holidays page capture — often the same
   response as leave, may come free with it). Holidays already in the
   attendance payload are marked on the calendar as of 1.8.0; a dedicated
-  endpoint would add the holiday's name and dates beyond the cached months.
+  endpoint would add names and dates beyond the cached months.
 - **Team: who's out today** (team/colleagues page capture).
 
-### Polish, whenever
+**Flip the target model to worked hours** — gated on observation, not code.
+Watch the popup's "Worked …" line for about a week; if it never turns red
+against real days, switch **Target model** on the options page. Model, tests
+and UI shipped in 1.4.0; only the default is conservative.
 
-- Translate the options page (popup and notifications are bilingual; settings
-  are English-only).
+**Polish, whenever.**
+
 - Light-Gruvbox alternative for anyone finding the cream too yellow: swap
-  `--paper` to bg0_h `#f9f5d7` and demote `#fbf1c7` to panel — one-line change
-  in `themes.js`.
-- VI freshness stamp can wrap to two lines in the masthead; contained but
-  slightly untidy.
-- Worst-case attendance tab height is ~609px (alert + over-quota + violations
-  all at once), 9px past Chrome's no-scroll budget; trim only if actually seen.
+  `--paper` to bg0_h `#f9f5d7` and demote `#fbf1c7` to panel — one line in
+  `themes.js`.
 - Per-scheme neutrals are derived by blending, not each scheme's official
-  greys — pin exact values per scheme in `themes.js` if fidelity matters.
+  greys — pin exact values per scheme if fidelity matters.
 - Notification snooze is a fixed 15 minutes; could be configurable.
 
 ### Decided against (and why)
@@ -251,7 +396,9 @@ pattern is identical to attendance.
   just navigated to.
 - **`chrome.storage.sync`**: single user, single machine; adds write quotas.
 - **Charting library / build step / TypeScript**: MV3 CSP forbids remote
-  scripts and the no-tooling property is a feature at this size.
+  scripts and the no-tooling property is a feature at this size — superseded
+  for the front end by 1.9.0, which cannot ship a framework without bundling.
+  The worker keeps the property.
 - **Options page as the only config path**: console overrides intentionally
   keep working; they write the same storage keys.
 

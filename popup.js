@@ -1,229 +1,750 @@
+import {
+  computeEffectiveTargets,
+  computeWorkedTargets,
+  findActiveCheckin,
+  getCurrentCycle,
+  isPastLateThreshold,
+  pad,
+  parseZohoTimestamp,
+  readPolicy,
+  toLocalDateKey,
+  DEFAULT_POLICY,
+} from "./policy.js";
+import {
+  applyStaticTranslations,
+  makeTranslator,
+  monthNames,
+  normalizeLanguage,
+  weekdayNames,
+} from "./i18n.js";
+import { applyTokens, resolveTokens } from "./themes.js";
+
+const AUTO_REFRESH_AFTER_MS = 5 * 60 * 1000;
+
+// Appearance = mode (light/dark) + scheme (palette). The stylesheet paints
+// the Gruvbox default before JS runs; applyAppearance stamps the mode and
+// overrides the tokens for whichever scheme is active.
+let activeLang = "en";
+let translate = makeTranslator("en");
+let activeSchemeId = "gruvbox";
+let activeCustomScheme = null;
+
+function resolveSystemTheme() {
+  return window.matchMedia("(prefers-color-scheme: dark)").matches
+    ? "dark"
+    : "light";
+}
+
+function applyAppearance(mode) {
+  document.documentElement.dataset.theme = mode;
+  applyTokens(
+    document.documentElement,
+    resolveTokens(activeSchemeId, mode, activeCustomScheme),
+  );
+}
+
+function toggleTheme() {
+  const next =
+    document.documentElement.dataset.theme === "dark" ? "light" : "dark";
+  applyAppearance(next);
+  chrome.storage.local.set({ theme: next });
+}
+
+function applyLanguage(lang) {
+  activeLang = normalizeLanguage(lang);
+  translate = makeTranslator(activeLang);
+  document.documentElement.lang = activeLang;
+  applyStaticTranslations(document, translate);
+  const langLabel = document.getElementById("lang-label");
+  if (langLabel) {
+    // The button names the destination, like the theme glyphs do.
+    langLabel.textContent = activeLang === "en" ? "VI" : "EN";
+  }
+}
+
+function formatDayLabel(date) {
+  return `${weekdayNames(activeLang)[date.getDay()]} ${date.getDate()} ${monthNames(activeLang)[date.getMonth()]}`;
+}
+
+function formatAgo(minutes) {
+  if (minutes < 1) return translate("justNow");
+  if (minutes < 60) return translate("agoMinutes", { n: minutes });
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return translate("agoHours", { n: hours });
+  return translate("agoDays", { n: Math.floor(hours / 24) });
+}
+
+function formatSignedHours(seconds) {
+  const sign = seconds < 0 ? "−" : "+";
+  const total = Math.round(Math.abs(seconds) / 60);
+  const hours = Math.floor(total / 60);
+  const minutes = total % 60;
+  return hours === 0
+    ? `${sign}${minutes}m`
+    : `${sign}${hours}h ${pad(minutes)}m`;
+}
+
 document.addEventListener("DOMContentLoaded", function () {
   const checkinTimeElem = document.getElementById("checkin-time");
-  const checkout1TimeElem = document.getElementById("checkout1-time");
+  const checkout1TargetElem = document.getElementById("checkout1-target");
   const checkout1StatusElem = document.getElementById("checkout1-status");
-  const fulltimeTimeElem = document.getElementById("fulltime-time");
-  const fulltimeStatusElem = document.getElementById("fulltime-status");
-  const refreshBtn = document.getElementById("refreshBtn");
-  const loginAlertElem = document.getElementById("login-alert");
+  const checkout1WrapElem = document.getElementById("checkout1-countdown-wrap");
 
-  let checkout1AlertShown = false;
-  let fulltimeAlertShown = false;
+  const fulltimeTargetElem = document.getElementById("fulltime-target");
+  const fulltimeStatusElem = document.getElementById("fulltime-status");
+  const fulltimeWrapElem = document.getElementById("fulltime-countdown-wrap");
+
+  const todayProgressElem = document.getElementById("today-progress");
+  const ptMarkerElem = document.getElementById("pt-marker");
+  const workedInfoElem = document.getElementById("worked-info");
+  const cycleLabelElem = document.getElementById("cycle-label");
+  const freshnessElem = document.getElementById("freshness");
+  const cycleBalanceElem = document.getElementById("cycle-balance");
+  const historyElem = document.getElementById("history-strip");
+
+  const tabAttendanceBtn = document.getElementById("tab-attendance");
+  const tabCalendarBtn = document.getElementById("tab-calendar");
+  const viewAttendanceElem = document.getElementById("view-attendance");
+  const viewCalendarElem = document.getElementById("view-calendar");
+  const calendarGridElem = document.getElementById("calendar-grid");
+  const calendarLabelElem = document.getElementById("calendar-label");
+
+  const refreshBtn = document.getElementById("refreshBtn");
+  const themeBtn = document.getElementById("themeBtn");
+  const optionsBtn = document.getElementById("optionsBtn");
+  const loginAlertElem = document.getElementById("login-alert");
+  const alertTextElem = document.getElementById("alert-text");
+  const langBtn = document.getElementById("langBtn");
+
+  function loginAlertMarkup() {
+    const link =
+      '<a class="alert-link" href="https://people.zoho.com/" target="_blank" rel="noreferrer">Zoho People</a>';
+    return translate("loginPrompt", { link });
+  }
+
+  let policy = DEFAULT_POLICY;
+  let timerInterval = null;
+  let activeDayEntries = null;
+  let activeCheckinDate = null;
+  let activeCheckout1Date = null;
+  let activeFulltimeDate = null;
 
   function formatTime(date) {
     return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   }
 
-  function getRemainingTime(targetTime) {
-    const now = new Date();
-    const diffMs = targetTime - now;
+  function formatDuration(diffMs) {
+    if (diffMs <= 0) return "00:00:00";
+    const totalSecs = Math.floor(diffMs / 1000);
+    const hours = Math.floor(totalSecs / 3600);
+    const minutes = Math.floor((totalSecs % 3600) / 60);
+    const seconds = totalSecs % 60;
 
-    if (diffMs <= 0) {
-      return { text: "Time completed", className: "time-green" };
+    return `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
+  }
+
+  function getTimerState(targetDate) {
+    if (!targetDate) {
+      return { text: "--:--:--", stateClass: "time-active" };
     }
 
-    const hours = Math.floor(diffMs / (1000 * 60 * 60));
-    const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+    const diffMs = targetDate.getTime() - Date.now();
+    const isLate = isPastLateThreshold(targetDate, activeCheckinDate, policy);
 
-    return { text: `${hours} hours ${minutes} minutes`, className: "time-red" };
+    if (diffMs <= 0) {
+      const overSecs = Math.floor(Math.abs(diffMs) / 1000);
+      const overHours = Math.floor(overSecs / 3600);
+      const overMins = Math.floor((overSecs % 3600) / 60);
+
+      const overText =
+        overHours > 0 || overMins > 0
+          ? translate("completedOver", { h: overHours, m: overMins })
+          : translate("completed");
+
+      return {
+        text: overText,
+        stateClass: isLate ? "time-late" : "time-completed",
+      };
+    }
+
+    return {
+      text: translate("timeLeft", { t: formatDuration(diffMs) }),
+      stateClass: isLate ? "time-late" : "time-active",
+    };
   }
 
-  function showChromeAlert(message) {
-    alert(message); // Display alert in Chrome
-  }
+  function renderCheckboxes(containerId, count, totalSlots, options = {}) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    container.innerHTML = "";
 
-  function updateAttendanceDisplay() {
-    chrome.storage.local.get("csrfToken", function (data) {
-      if (!data.csrfToken) {
-        // Hiển thị cảnh báo nếu không có CSRF token
-        loginAlertElem.style.display = "block";
-      } else {
-        loginAlertElem.style.display = "none";
-      }
-    });
-    chrome.storage.local.get("attendanceData", function (data) {
-      if (data.attendanceData) {
-        const today = new Date().toISOString().split("T")[0];
+    const { isWarning = false, records = [] } = options;
+    const slotsToShow = Math.max(totalSlots, count);
 
-        // Tính toán số ngày không đủ 8 tiếng và không chấm công
+    for (let i = 0; i < slotsToShow; i++) {
+      const slot = document.createElement("div");
+      slot.className = "cb-slot";
 
-        if (data.attendanceData && data.attendanceData.dayList) {
-          console.log(data.attendanceData);
-          let dayList = data.attendanceData.dayList;
-
-          let fulltimeThreshold = 8 * 3600; // 8 tiếng tính bằng giây
-          let daysBelow8Hours = []; // Lưu danh sách số giờ
-          let daysNoAttendance = 0; // Số ngày absent
-          let absentCount = 0;
-
-          // Xác định khoảng thời gian chu kỳ: 21 tháng trước -> 20 tháng này
-          let today = new Date();
-          let startCycle, endCycle;
-
-          if (today.getDate() >= 21) {
-            // Nếu hôm nay >= 21 thì chu kỳ là 21 tháng này -> 20 tháng sau
-            startCycle = new Date(today.getFullYear(), today.getMonth(), 21);
-            endCycle = new Date(today.getFullYear(), today.getMonth() + 1, 21);
-          } else {
-            // Nếu hôm nay < 21 thì chu kỳ là 21 tháng trước -> 20 tháng này
-            startCycle = new Date(
-              today.getFullYear(),
-              today.getMonth() - 1,
-              21
-            );
-            endCycle = new Date(today.getFullYear(), today.getMonth(), 21);
-          }
-
-          let leaveUsed = 0; // Counter for used leave days
-          let daysBelow6Hours = []; // For days < 6 hours
-          let days6To8Hours = []; // For days between 6-8 hours
-
-          Object.values(dayList).forEach((day) => {
-            let dayDate = new Date(day.orgdate);
-            let tsecs = day.tsecs || 0;
-            let status = (day.status || "").trim();
-
-            if (dayDate >= startCycle && dayDate <= endCycle) {
-              let hoursWorked = (tsecs / 3600).toFixed(1);
-              console.log(dayDate);
-
-              if (tsecs > 0) {
-                if (tsecs < 6 * 3600) {
-                  // Less than 6 hours
-                  daysBelow6Hours.push(hoursWorked);
-                } else if (tsecs < fulltimeThreshold) {
-                  // Between 6-8 hours
-                  days6To8Hours.push(hoursWorked);
-                }
-              }
-
-              if (day.description && day.description !== "") {
-                daysNoAttendance++;
-              }
-              if (day.leaveDaysTaken) {
-                leaveUsed += day.leaveDaysTaken;
-              }
-              if (status === "Absent") {
-                absentCount++;
-              }
-            }
-          });
-
-          const text6To8Hours =
-            days6To8Hours.length > 0
-              ? `[${days6To8Hours.length}/5] --- [${days6To8Hours.join(", ")}]`
-              : "0";
-
-          const textBelow6Hours =
-            daysBelow6Hours.length > 0
-              ? `[${daysBelow6Hours.length}] --- [${daysBelow6Hours.join(
-                  ", "
-                )}]`
-              : "0";
-
-          document.getElementById("below-8-hours-count").textContent =
-            text6To8Hours;
-          document.getElementById("below-6-hours-count").textContent =
-            textBelow6Hours;
-          document.getElementById(
-            "no-attendance-count"
-          ).textContent = `${daysNoAttendance}/3`;
-          document.getElementById("leave-used").textContent = `${leaveUsed}`;
-          document.getElementById("absent-count").textContent = absentCount;
+      if (i < count) {
+        if (i >= totalSlots) {
+          slot.classList.add("over");
         } else {
-          document.getElementById("below-8-hours-count").textContent = "N/A";
-          document.getElementById("below-6-hours-count").textContent = "N/A";
-          document.getElementById("no-attendance-count").textContent = "N/A";
-          document.getElementById("leave-used").textContent = "N/A";
-          document.getElementById("absent-count").textContent = "N/A";
+          slot.classList.add(isWarning ? "warning" : "checked");
         }
-
-        // Hiển thị thông tin chấm công
-        if (data.attendanceData.entries) {
-          const todayEntries = data.attendanceData.entries[today];
-          if (todayEntries && todayEntries.length > 0) {
-            const checkinTime = todayEntries[0].fdate;
-            const checkinDate = new Date(checkinTime.replace(/-/g, "/"));
-
-            // Calculate Checkout 1 time (7.25h after check-in)
-            const checkout1Date = new Date(
-              checkinDate.getTime() + 7.25 * 60 * 60 * 1000
-            );
-
-            // Calculate Fulltime time (9.25h after check-in)
-            const fulltimeDate = new Date(
-              checkinDate.getTime() + 9.25 * 60 * 60 * 1000
-            );
-
-            // Display times
-            checkinTimeElem.textContent = formatTime(checkinDate);
-            checkout1TimeElem.textContent = formatTime(checkout1Date);
-            fulltimeTimeElem.textContent = formatTime(fulltimeDate);
-
-            // Update Checkout 1 status
-            const checkout1Status = getRemainingTime(checkout1Date);
-            checkout1StatusElem.textContent = checkout1Status.text;
-            checkout1StatusElem.className = checkout1Status.className;
-
-            // Update Fulltime status
-            const fulltimeStatus = getRemainingTime(fulltimeDate);
-            fulltimeStatusElem.textContent = fulltimeStatus.text;
-            fulltimeStatusElem.className = fulltimeStatus.className;
-
-            // Check if Checkout 1 time is reached and alert not shown
-            if (!checkout1AlertShown && new Date() >= checkout1Date) {
-              //showChromeAlert("🎉 You have reached Checkout 1 time! Take a short break.");
-              checkout1AlertShown = true;
-            }
-
-            // Check if Fulltime is reached and alert not shown
-            if (!fulltimeAlertShown && new Date() >= fulltimeDate) {
-              //showChromeAlert("✅ You have completed your Fulltime work hours! Congratulations! 🎉");
-              fulltimeAlertShown = true;
-            }
-
-            // Change color if Checkout 1 or Fulltime is after 19:30
-            const thresholdTime = new Date();
-            thresholdTime.setHours(19, 30, 0, 0);
-            if (
-              checkout1Date >= thresholdTime ||
-              fulltimeDate >= thresholdTime
-            ) {
-              checkout1StatusElem.className = "time-orange";
-              fulltimeStatusElem.className = "time-orange";
-            }
-          } else {
-            checkinTimeElem.textContent = "No attendance record";
-            checkout1TimeElem.textContent = "N/A";
-            fulltimeTimeElem.textContent = "N/A";
-          }
+        slot.innerHTML = `
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="20 6 9 17 4 12"/>
+          </svg>
+        `;
+        if (records[i]) {
+          slot.title = `${records[i].label} · ${records[i].hours}h`;
         }
-      } else {
-        checkinTimeElem.textContent = "No data found";
-        checkout1TimeElem.textContent = "N/A";
-        fulltimeTimeElem.textContent = "N/A";
       }
-    });
+      container.appendChild(slot);
+    }
+
+    // Over the quota reads as an error, exactly at it as a caution, and the
+    // violation rows are already an error at any non-zero count.
+    const pill = document.createElement("span");
+    pill.className = "count-pill";
+    if (count > totalSlots || (isWarning && count > 0)) {
+      pill.classList.add("alert");
+    } else if (count > 0) {
+      pill.classList.add(count === totalSlots ? "warn" : "active");
+    }
+    pill.textContent = `${count}/${totalSlots}`;
+    container.appendChild(pill);
   }
 
-  // Load data when popup opens
-  updateAttendanceDisplay();
+  // The side-by-side the worked-hours model has to earn its trust with: while
+  // targetMode is "offset" this line is purely informational, and turning red
+  // is the signal that Zoho's entries do not mean what the offset model
+  // assumes (usually: breaks are not recorded as separate sessions).
+  function renderWorkedInfo() {
+    if (!activeDayEntries) {
+      workedInfoElem.textContent = "";
+      workedInfoElem.className = "worked-info";
+      workedInfoElem.title = "";
+      return;
+    }
 
-  // Refresh data on button click
-  refreshBtn.addEventListener("click", function () {
-    checkinTimeElem.textContent = "Refreshing...";
-    checkout1TimeElem.textContent = "Refreshing...";
-    fulltimeTimeElem.textContent = "Refreshing...";
-
-    chrome.runtime.sendMessage(
-      { action: "updateAttendance" },
-      function (response) {
-        if (response && response.status === "success") {
-          updateAttendanceDisplay();
-        } else {
-          checkinTimeElem.textContent = "Failed to refresh";
-        }
-      }
+    const workedTargets = computeWorkedTargets(
+      activeDayEntries,
+      new Date(),
+      policy,
     );
+    if (!workedTargets) {
+      workedInfoElem.textContent = "";
+      workedInfoElem.className = "worked-info";
+      return;
+    }
+
+    const workedMinutes = Math.floor(workedTargets.workedMs / 60000);
+    let text = translate("workedLine", {
+      h: Math.floor(workedMinutes / 60),
+      m: pad(workedMinutes % 60),
+    });
+    text += workedTargets.isOpen
+      ? translate("workedFullAt", { t: formatTime(workedTargets.fullTime) })
+      : translate("workedCheckedOut");
+
+    const divergesFromSchedule =
+      policy.targetMode === "offset" &&
+      workedTargets.isOpen &&
+      activeFulltimeDate &&
+      Math.abs(
+        workedTargets.fullTime.getTime() - activeFulltimeDate.getTime(),
+      ) >
+        10 * 60 * 1000;
+
+    workedInfoElem.textContent = text;
+    workedInfoElem.className = divergesFromSchedule
+      ? "worked-info diverges"
+      : "worked-info";
+    workedInfoElem.title = divergesFromSchedule
+      ? translate("divergeTooltip")
+      : "";
+  }
+
+  function updateLiveTimers() {
+    renderWorkedInfo();
+
+    const co1State = getTimerState(activeCheckout1Date);
+    checkout1StatusElem.textContent = co1State.text;
+    checkout1WrapElem.className = `live-countdown ${co1State.stateClass}`;
+
+    const ftState = getTimerState(activeFulltimeDate);
+    fulltimeStatusElem.textContent = ftState.text;
+    fulltimeWrapElem.className = `live-countdown ${ftState.stateClass}`;
+
+    const totalDuration =
+      activeFulltimeDate.getTime() - activeCheckinDate.getTime();
+    if (totalDuration > 0) {
+      const elapsed = Date.now() - activeCheckinDate.getTime();
+      const progressPercent = Math.min(
+        Math.max((elapsed / totalDuration) * 100, 0),
+        100,
+      );
+      todayProgressElem.style.width = `${progressPercent.toFixed(1)}%`;
+    }
+  }
+
+  function startLiveTimerLoop() {
+    stopLiveTimerLoop();
+    updateLiveTimers();
+    timerInterval = setInterval(updateLiveTimers, 1000);
+  }
+
+  function stopLiveTimerLoop() {
+    if (timerInterval) {
+      clearInterval(timerInterval);
+      timerInterval = null;
+    }
+  }
+
+  function showLoginAlert() {
+    alertTextElem.innerHTML = loginAlertMarkup();
+    loginAlertElem.style.display = "flex";
+  }
+
+  function showErrorAlert(message) {
+    alertTextElem.textContent = message;
+    loginAlertElem.style.display = "flex";
+  }
+
+  function hideAlert() {
+    loginAlertElem.style.display = "none";
+  }
+
+  // "No record today" is ambiguous on its own — it can mean Zoho has not seen
+  // the check-in yet, or that we have not reached Zoho for hours. The
+  // freshness stamp is what separates the two.
+  function renderFreshness(lastSuccessAt) {
+    if (!lastSuccessAt) {
+      freshnessElem.textContent = translate("neverUpdated");
+      freshnessElem.className = "freshness stale";
+      return;
+    }
+
+    const minutes = Math.floor((Date.now() - lastSuccessAt) / 60000);
+    freshnessElem.textContent = translate("updatedAgo", {
+      t: formatAgo(minutes),
+    });
+    freshnessElem.className =
+      minutes >= policy.staleAfterMinutes ? "freshness stale" : "freshness";
+  }
+
+  function renderHistory(cycleDays) {
+    historyElem.innerHTML = "";
+    if (cycleDays.length === 0) {
+      return;
+    }
+
+    const scaleSeconds = Math.max(
+      policy.fullDaySeconds,
+      ...cycleDays.map((day) => day.tsecs),
+    );
+
+    // Ruled like the paper it imitates: dashed lines at the short-day floor
+    // and the full day, so every bar reads against the thresholds directly.
+    for (const thresholdSeconds of [
+      policy.shortDaySeconds,
+      policy.fullDaySeconds,
+    ]) {
+      const bottomPercent = (thresholdSeconds / scaleSeconds) * 100;
+      if (bottomPercent >= 98) {
+        continue;
+      }
+      const line = document.createElement("div");
+      line.className = "history-refline";
+      line.style.bottom = `${bottomPercent.toFixed(1)}%`;
+      historyElem.appendChild(line);
+    }
+
+    for (const day of cycleDays) {
+      const bar = document.createElement("div");
+      bar.className = "hbar";
+      if (day.tsecs === 0) {
+        bar.classList.add("empty");
+      } else if (day.tsecs < policy.shortDaySeconds) {
+        bar.classList.add("low");
+      } else if (day.tsecs < policy.fullDaySeconds) {
+        bar.classList.add("short");
+      }
+      bar.style.height = `${Math.max((day.tsecs / scaleSeconds) * 100, day.tsecs > 0 ? 4 : 2)}%`;
+      bar.title = `${day.label} · ${(day.tsecs / 3600).toFixed(1)}h`;
+      historyElem.appendChild(bar);
+    }
+  }
+
+  function setActiveTab(tab) {
+    const isCalendar = tab === "calendar";
+    viewAttendanceElem.hidden = isCalendar;
+    viewCalendarElem.hidden = !isCalendar;
+    tabAttendanceBtn.classList.toggle("active", !isCalendar);
+    tabCalendarBtn.classList.toggle("active", isCalendar);
+  }
+
+  // The whole cycle as a grid, straight from the cached dayList — future days
+  // of the current month are already in the payload. Statuses beyond the ones
+  // the quota logic understands are surfaced verbatim in the tooltip rather
+  // than guessed at.
+  function renderCalendar(dayList) {
+    const { start, end } = getCurrentCycle(new Date(), policy);
+    calendarLabelElem.textContent = `${start.getDate()} ${monthNames(activeLang)[start.getMonth()]} - ${end.getDate()} ${monthNames(activeLang)[end.getMonth()]}`;
+
+    const dayByKey = new Map();
+    Object.values(dayList).forEach((day) => {
+      const date = parseZohoTimestamp(day.orgdate);
+      if (date && date >= start && date <= end) {
+        dayByKey.set(toLocalDateKey(date), day);
+      }
+    });
+
+    calendarGridElem.innerHTML = "";
+    const todayKey = toLocalDateKey(new Date());
+
+    const mondayFirstOffset = (start.getDay() + 6) % 7;
+    for (let blank = 0; blank < mondayFirstOffset; blank++) {
+      const spacer = document.createElement("div");
+      spacer.className = "cal-cell spacer";
+      calendarGridElem.appendChild(spacer);
+    }
+
+    for (
+      const cursor = new Date(start);
+      cursor <= end;
+      cursor.setDate(cursor.getDate() + 1)
+    ) {
+      const key = toLocalDateKey(cursor);
+      const day = dayByKey.get(key);
+      const isFuture = key > todayKey;
+
+      const cell = document.createElement("div");
+      cell.className = "cal-cell";
+      cell.textContent = cursor.getDate();
+      let title = formatDayLabel(cursor);
+
+      if (day) {
+        const tsecs = Number(day.tsecs) || 0;
+        if (Number(day.leaveDaysTaken) > 0) {
+          cell.classList.add("leave");
+        } else if ((day.status || "").trim() === "Absent") {
+          cell.classList.add("absent");
+        } else if (tsecs >= policy.fullDaySeconds) {
+          cell.classList.add("full");
+        } else if (tsecs >= policy.shortDaySeconds) {
+          cell.classList.add("short");
+        } else if (tsecs > 0) {
+          cell.classList.add("low");
+        } else {
+          cell.classList.add(isFuture ? "future" : "off");
+        }
+        if (tsecs > 0) {
+          title += ` · ${(tsecs / 3600).toFixed(1)}h`;
+        }
+        const statusText = (day.status || "").trim();
+        if (statusText) {
+          title += ` · ${statusText}`;
+        }
+      } else {
+        cell.classList.add(isFuture ? "future" : "off");
+        title += ` · ${translate("calNoData")}`;
+      }
+
+      if (key === todayKey) {
+        cell.classList.add("today");
+      }
+      cell.title = title;
+      calendarGridElem.appendChild(cell);
+    }
+  }
+
+  function renderCycleUsage(dayList) {
+    const { start, end } = getCurrentCycle(new Date(), policy);
+    cycleLabelElem.textContent = `${start.getDate()} ${monthNames(activeLang)[start.getMonth()]} - ${end.getDate()} ${monthNames(activeLang)[end.getMonth()]}`;
+
+    const days6To8Hours = [];
+    const daysBelow6Hours = [];
+    const cycleDays = [];
+    let daysNoAttendance = 0;
+    let leaveUsed = 0;
+    let absentCount = 0;
+    let workedSeconds = 0;
+    let workedDays = 0;
+
+    Object.values(dayList).forEach((day) => {
+      const dayDate = parseZohoTimestamp(day.orgdate);
+      if (!dayDate || dayDate < start || dayDate > end) {
+        return;
+      }
+
+      const tsecs = Number(day.tsecs) || 0;
+      const label = formatDayLabel(dayDate);
+      const record = { label, hours: (tsecs / 3600).toFixed(1) };
+
+      cycleDays.push({ label, tsecs });
+
+      if (tsecs > 0) {
+        workedSeconds += tsecs;
+        workedDays++;
+        if (tsecs < policy.shortDaySeconds) {
+          daysBelow6Hours.push(record);
+        } else if (tsecs < policy.fullDaySeconds) {
+          days6To8Hours.push(record);
+        }
+      }
+
+      if (day.approvalInfo) {
+        daysNoAttendance++;
+      }
+      leaveUsed += Number(day.leaveDaysTaken) || 0;
+      if ((day.status || "").trim() === "Absent") {
+        absentCount++;
+      }
+    });
+
+    renderCheckboxes(
+      "cb-6-8-hours",
+      days6To8Hours.length,
+      policy.shortDayQuota,
+      {
+        records: days6To8Hours,
+      },
+    );
+    document.getElementById("below-8-hours-details").textContent =
+      days6To8Hours.length > 0
+        ? days6To8Hours.map((r) => `${r.hours}h`).join(", ")
+        : translate("noRecords");
+
+    renderCheckboxes("cb-requests", daysNoAttendance, policy.requestQuota);
+    document.getElementById("no-attendance-details").textContent = translate(
+      "usedOf",
+      { n: daysNoAttendance, m: policy.requestQuota },
+    );
+
+    renderCheckboxes(
+      "cb-below-6-hours",
+      daysBelow6Hours.length,
+      policy.violationQuota,
+      {
+        isWarning: true,
+        records: daysBelow6Hours,
+      },
+    );
+    document.getElementById("below-6-hours-details").textContent =
+      daysBelow6Hours.length > 0
+        ? daysBelow6Hours.map((r) => `${r.hours}h`).join(", ")
+        : translate("none");
+
+    document.getElementById("leave-used").textContent = `${leaveUsed}d`;
+    document.getElementById("absent-count").textContent = `${absentCount}d`;
+
+    // Measured only against days that actually have a record, so days off and
+    // not-yet-worked days never count as a deficit.
+    const balanceSeconds = workedSeconds - workedDays * policy.fullDaySeconds;
+    cycleBalanceElem.textContent =
+      workedDays === 0 ? "—" : formatSignedHours(balanceSeconds);
+    cycleBalanceElem.className = `stat-val${workedDays > 0 && balanceSeconds < 0 ? " stat-negative" : ""}`;
+    cycleBalanceElem.title =
+      workedDays === 0
+        ? ""
+        : `${(workedSeconds / 3600).toFixed(1)}h across ${workedDays} recorded days`;
+
+    renderHistory(cycleDays);
+  }
+
+  function clearTodayTimeline(checkinLabel) {
+    stopLiveTimerLoop();
+    activeDayEntries = null;
+    renderWorkedInfo();
+    activeCheckinDate = null;
+    activeCheckout1Date = null;
+    activeFulltimeDate = null;
+
+    checkinTimeElem.textContent = checkinLabel;
+    checkout1TargetElem.textContent = "--:--";
+    fulltimeTargetElem.textContent = "--:--";
+    checkout1StatusElem.textContent = translate("pending");
+    fulltimeStatusElem.textContent = translate("pending");
+    checkout1WrapElem.className = "live-countdown time-active";
+    fulltimeWrapElem.className = "live-countdown time-active";
+    todayProgressElem.style.width = "0%";
+    ptMarkerElem.style.display = "none";
+  }
+
+  function renderTodayTimeline(attendanceData) {
+    const active = findActiveCheckin(attendanceData, new Date(), policy);
+    if (!active) {
+      clearTodayTimeline(translate("noRecordToday"));
+      return;
+    }
+
+    const targets = computeEffectiveTargets(
+      attendanceData,
+      active,
+      new Date(),
+      policy,
+    );
+    activeDayEntries =
+      attendanceData.entries?.[toLocalDateKey(active.checkin)] || null;
+    activeCheckinDate = active.checkin;
+    activeCheckout1Date = targets.partTime;
+    activeFulltimeDate = targets.fullTime;
+
+    checkinTimeElem.textContent = active.isFromYesterday
+      ? translate("yesterdayAt", { t: formatTime(activeCheckinDate) })
+      : formatTime(activeCheckinDate);
+    checkout1TargetElem.textContent = formatTime(activeCheckout1Date);
+    fulltimeTargetElem.textContent = formatTime(activeFulltimeDate);
+
+    const spanMs = activeFulltimeDate.getTime() - activeCheckinDate.getTime();
+    const partFraction =
+      (activeCheckout1Date.getTime() - activeCheckinDate.getTime()) / spanMs;
+    ptMarkerElem.style.left = `${(partFraction * 100).toFixed(1)}%`;
+    ptMarkerElem.style.display = "block";
+
+    startLiveTimerLoop();
+  }
+
+  let autoRefreshRequested = false;
+
+  // Stale-while-revalidate: the popup paints from cache instantly, then asks
+  // the worker for fresh data once per open; the storage listener repaints
+  // when the answer lands, success or failure.
+  function requestBackgroundRefresh(csrfToken, lastSuccessAt) {
+    if (autoRefreshRequested || !csrfToken) {
+      return;
+    }
+    if (lastSuccessAt && Date.now() - lastSuccessAt < AUTO_REFRESH_AFTER_MS) {
+      return;
+    }
+    autoRefreshRequested = true;
+    chrome.runtime.sendMessage({ action: "updateAttendance" }).catch(() => {});
+  }
+
+  async function updateAttendanceDisplay() {
+    const { csrfToken, attendanceData, lastSuccessAt, lastError } =
+      await chrome.storage.local.get([
+        "csrfToken",
+        "attendanceData",
+        "lastSuccessAt",
+        "lastError",
+      ]);
+
+    renderFreshness(lastSuccessAt);
+    requestBackgroundRefresh(csrfToken, lastSuccessAt);
+
+    if (!csrfToken) {
+      showLoginAlert();
+    } else if (lastError && (!lastSuccessAt || lastError.at > lastSuccessAt)) {
+      showErrorAlert(lastError.message);
+    } else {
+      hideAlert();
+    }
+
+    if (!attendanceData) {
+      clearTodayTimeline(translate("noDataFound"));
+      return;
+    }
+
+    if (attendanceData.dayList) {
+      renderCycleUsage(attendanceData.dayList);
+      renderCalendar(attendanceData.dayList);
+    }
+    renderTodayTimeline(attendanceData);
+  }
+
+  async function init() {
+    policy = await readPolicy();
+    const { activeTab, theme, scheme, customScheme, lang } =
+      await chrome.storage.local.get([
+        "activeTab",
+        "theme",
+        "scheme",
+        "customScheme",
+        "lang",
+      ]);
+    setActiveTab(activeTab === "calendar" ? "calendar" : "attendance");
+    activeSchemeId = scheme || "gruvbox";
+    activeCustomScheme = customScheme || null;
+    applyAppearance(
+      theme === "dark" || theme === "light" ? theme : resolveSystemTheme(),
+    );
+    applyLanguage(lang);
+    await updateAttendanceDisplay();
+  }
+
+  init();
+
+  // Repaints when the worker lands fresh data (or a policy/theme change from
+  // the options page) while the popup is open, so the refresh button is never
+  // required for the display to catch up.
+  chrome.storage.onChanged.addListener((changes, area) => {
+    if (area !== "local") {
+      return;
+    }
+    if (changes.theme?.newValue) {
+      applyAppearance(changes.theme.newValue);
+    }
+    if (changes.scheme || changes.customScheme) {
+      activeSchemeId = changes.scheme?.newValue ?? activeSchemeId;
+      activeCustomScheme = changes.customScheme?.newValue ?? activeCustomScheme;
+      applyAppearance(document.documentElement.dataset.theme);
+    }
+    if (changes.lang) {
+      applyLanguage(changes.lang.newValue);
+      updateAttendanceDisplay();
+      return;
+    }
+    if (changes.policy) {
+      readPolicy().then((freshPolicy) => {
+        policy = freshPolicy;
+        updateAttendanceDisplay();
+      });
+      return;
+    }
+    if (changes.attendanceData || changes.lastSuccessAt || changes.lastError) {
+      updateAttendanceDisplay();
+    }
+  });
+
+  tabAttendanceBtn.addEventListener("click", () => {
+    setActiveTab("attendance");
+    chrome.storage.local.set({ activeTab: "attendance" });
+  });
+  tabCalendarBtn.addEventListener("click", () => {
+    setActiveTab("calendar");
+    chrome.storage.local.set({ activeTab: "calendar" });
+  });
+
+  themeBtn.addEventListener("click", toggleTheme);
+
+  langBtn.addEventListener("click", () => {
+    const next = activeLang === "en" ? "vi" : "en";
+    applyLanguage(next);
+    chrome.storage.local.set({ lang: next });
+    updateAttendanceDisplay();
+  });
+
+  optionsBtn.addEventListener("click", () => chrome.runtime.openOptionsPage());
+
+  refreshBtn.addEventListener("click", async function () {
+    refreshBtn.classList.add("spinning");
+
+    try {
+      const response = await chrome.runtime.sendMessage({
+        action: "updateAttendance",
+      });
+      if (response.status === "success") {
+        await updateAttendanceDisplay();
+      } else {
+        showErrorAlert(translate("refreshFailed", { msg: response.message }));
+      }
+    } catch (error) {
+      showErrorAlert(translate("refreshFailed", { msg: error.message }));
+    } finally {
+      refreshBtn.classList.remove("spinning");
+    }
   });
 });

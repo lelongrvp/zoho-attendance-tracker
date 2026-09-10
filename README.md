@@ -165,12 +165,13 @@ chrome.storage.local.get("attendanceData", (d) =>
 );
 ```
 
-- `preMonth` addresses history as "how many months back", and how far back the
-  endpoint honours it is unknown — the original code only ever asked for 0 and
-  1. The calendar's back-arrows ask for more. A month that comes back for the
-  wrong period is now refused rather than cached under the label that was
-  asked for, so the failure is visible in the calendar's note instead of
-  showing another month's days as if they were this one.
+- ~~`preMonth` past 1~~ — verified live 2026-09-10: it is a true month offset,
+  not the two-state flag its only two original call sites (`0` and `1`) left
+  it looking like. Probed at 0, 1, 2, 3 and 6; each returned exactly that
+  month, whole (`preMonth=6` → 2026-03-01..31). The calendar's back-arrows can
+  therefore address any month. The guard that refuses a payload whose days do
+  not fall in the month that was asked for stays: it costs nothing and it is
+  what would catch this changing.
 - `approvalInfo` being present means an attendance request. Emptiness is now
   handled - an empty object, empty array or blank string no longer counts as a
   used request - but what the field means is still inferred. The calendar puts

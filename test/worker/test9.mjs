@@ -22,7 +22,7 @@ globalThis.fetch = async () => ({ ok: true, json: async () => ({
     { fdate: "10-Sep-2026 - 01:00 PM", tdate: "-" },
     { fdate: "mystery-format", tdate: "mystery-format" },
   ] } }) });
-await import("../../background.js");
+await import("../../src/worker/background.js");
 await new Promise((r) => listeners.m({ action: "updateAttendance" }, {}, r));
 const cached = store.get("attendanceData").entries[today];
 assert.strictEqual(cached[0].fdate, "2026-09-10 09:29:00", "DMY normalised to ISO at ingest");

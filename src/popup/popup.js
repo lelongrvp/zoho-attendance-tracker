@@ -16,15 +16,15 @@ import {
   readPolicy,
   toLocalDateKey,
   DEFAULT_POLICY,
-} from "./policy.js";
+} from "../lib/policy.js";
 import {
   applyStaticTranslations,
   makeTranslator,
   monthNames,
   normalizeLanguage,
   weekdayNames,
-} from "./i18n.js";
-import { applyTokens, resolveTokens } from "./themes.js";
+} from "../lib/i18n.js";
+import { applyTokens, resolveTokens } from "../lib/themes.js";
 
 const AUTO_REFRESH_AFTER_MS = 5 * 60 * 1000;
 

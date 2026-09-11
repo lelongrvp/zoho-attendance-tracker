@@ -38,7 +38,7 @@ globalThis.fetch = async () => ({ ok: true, json: async () => ({
   ] },
 }) });
 
-await import("../../background.js");
+await import("../../src/worker/background.js");
 const send = () => new Promise((r) => listeners.message({ action: "updateAttendance" }, {}, r));
 
 const res = await send();

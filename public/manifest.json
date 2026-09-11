@@ -17,7 +17,7 @@
     "type": "module"
   },
   "action": {
-    "default_popup": "popup.html",
+    "default_popup": "popup/index.html",
     "default_icon": {
       "16": "icon16.png",
       "48": "icon48.png",
@@ -30,7 +30,7 @@
     "128": "icon128.png"
   },
   "options_ui": {
-    "page": "options.html",
+    "page": "options/index.html",
     "open_in_tab": true
   }
 }

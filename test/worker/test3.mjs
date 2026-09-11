@@ -36,7 +36,7 @@ const key = (d) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}
 let payload = null;
 globalThis.fetch = async () => ({ ok: true, json: async () => payload });
 
-await import("../../background.js");
+await import("../../src/worker/background.js");
 const send = () => new Promise((r) => listeners.message({ action: "updateAttendance" }, {}, r));
 
 // ---- Phase 1: 00:20, yesterday's 16:30 late start -> full-time 00:30 still running

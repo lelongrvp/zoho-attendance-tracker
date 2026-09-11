@@ -26,7 +26,7 @@ globalThis.fetch = async () => ({ ok: true, json: async () => ({
   dayList: { 0: { orgdate: key(checkin), tsecs: 8 * 3600 } },
   entries: { [key(now)]: [{ fdate }] } }) });
 
-await import("../../background.js");
+await import("../../src/worker/background.js");
 const send = () => new Promise((r) => listeners.message({ action: "updateAttendance" }, {}, r));
 
 // ---- 7. a target already in the past must not be armed (it would fire instantly,

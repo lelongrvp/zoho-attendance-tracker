@@ -19,7 +19,7 @@ import { extname } from "node:path";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(here, "../..");
-const pageArg = process.argv[2] ?? "popup.html";
+const pageArg = process.argv[2] ?? "src/popup/index.html";
 const pagePath = resolve(repoRoot, pageArg);
 
 const CHROME = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
@@ -78,9 +78,23 @@ const work = await mkdtemp(join(tmpdir(), "attendance-render-"));
 let failures = 0;
 
 try {
-  // The whole page directory, so relative module imports resolve as they do
-  // in the real extension.
-  await cp(dirname(pagePath), work, { recursive: true });
+  // Serve from the root the page's own asset URLs are relative to: the built
+  // extension references /assets/... from the extension root, while the source
+  // popup references siblings. Copying the wrong root gives a blank page and a
+  // confusing failure rather than an honest one.
+  // The page's module imports reach outside its own folder (src/popup/popup.js
+  // imports ../lib/policy.js), so serving the folder alone yields a blank page
+  // and a misleading "0 cells" failure. Serve the tree the imports resolve
+  // against: dist for a built page, src for a source one.
+  const distRoot = resolve(repoRoot, "dist");
+  const srcRoot = resolve(repoRoot, "src");
+  const serveRoot = pagePath.startsWith(distRoot)
+    ? distRoot
+    : pagePath.startsWith(srcRoot)
+      ? srcRoot
+      : dirname(pagePath);
+  await cp(serveRoot, work, { recursive: true });
+  const pageUrlPath = pagePath.slice(serveRoot.length).replace(/^\//, "");
 
   const stubTemplate = await readFile(join(here, "chrome-stub.js"), "utf8");
   const pageSource = await readFile(pagePath, "utf8");
@@ -96,10 +110,10 @@ try {
       stubTemplate.replace("__THEME__", theme).replace("__LANG__", lang),
       "utf8",
     );
-    const pageName = `probe-${theme}-${lang}.html`;
+    const pageName = pageUrlPath.replace(/[^/]+$/, `probe-${theme}-${lang}.html`);
     await writeFile(
       join(work, pageName),
-      pageSource.replace(moduleTag[0], `<script src="${stubName}"></script>\n${moduleTag[0]}`),
+      pageSource.replace(moduleTag[0], `<script src="/${stubName}"></script>\n${moduleTag[0]}`),
       "utf8",
     );
 

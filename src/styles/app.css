@@ -1,0 +1,65 @@
+@import "tailwindcss";
+
+/* The token contract.
+ *
+ * These values are Gruvbox light, and they are only the palette the page
+ * wears before any JavaScript runs. themes.js resolves the real set at
+ * runtime - six base colours per mode, eleven more derived by blending - and
+ * writes them onto the root element, where an inline style beats this block.
+ *
+ * Because Tailwind v4 compiles `bg-paper` to `background-color: var(--color-paper)`,
+ * overriding the variable re-colours every utility instantly. That is the whole
+ * mechanism behind ten colorschemes, a custom scheme, and both modes:
+ *
+ *   - no `dark:` variant is ever written. Mode is an input to the resolver,
+ *     not a CSS state, so `bg-paper` is already correct in both.
+ *   - no per-scheme classes exist. A scheme is eighteen variable writes.
+ *
+ * If a component wants a colour that is not here, add it to the resolver in
+ * themes.js and to this block - never reach for a literal in JSX.
+ */
+@theme {
+  --color-paper: #fbf1c7;
+  --color-panel: #f9f5d7;
+
+  --color-ink: #3c3836;
+  --color-ink-2: #504945;
+  --color-ink-3: #665c54;
+  --color-ink-faint: #a89984;
+
+  --color-rule: #ebdbb2;
+  --color-rule-strong: #d5c4a1;
+
+  --color-stamp: #cc241d;
+  --color-stamp-tint: #f1d9b4;
+  --color-stamp-line: #e3b597;
+  --color-stamp-text: #9d0006;
+  --color-on-stamp: #fbf1c7;
+
+  --color-moss: #79740e;
+  --color-wash: #f2e5bc;
+  --color-amber: #d79921;
+  --color-on-amber: #3c3836;
+
+  --font-ui: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-num: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+
+  --radius-cell: 2px;
+  --radius-panel: 3px;
+}
+
+/* Patterns that would be unreadable as utilities. A holiday is hatched rather
+ * than filled because every solid fill in the calendar means hours worked.
+ *
+ * Note the shorthand: `background` resets background-color, so `hatch` wipes
+ * any `bg-*` on the same element regardless of class order. Hatched cells get
+ * no fill utility - that is the intent, but it is silent if you forget. */
+@utility hatch {
+  background: repeating-linear-gradient(
+    -45deg,
+    var(--color-panel),
+    var(--color-panel) 3px,
+    var(--color-rule-strong) 3px,
+    var(--color-rule-strong) 6px
+  );
+}

@@ -10,9 +10,9 @@ import {
   readPolicy,
   readPortalId,
   toLocalDateKey,
-} from "./policy.js";
-import { makeTranslator, normalizeLanguage } from "./i18n.js";
-import { badgeColors } from "./themes.js";
+} from "../lib/policy.js";
+import { makeTranslator, normalizeLanguage } from "../lib/i18n.js";
+import { badgeColors } from "../lib/themes.js";
 
 const REFRESH_ALARM = "refreshAttendance";
 const REFRESH_PERIOD_MINUTES = 15;

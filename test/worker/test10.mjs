@@ -43,7 +43,7 @@ globalThis.fetch = async (url, init) => {
   return { ok: true, json: async () => monthPayload(monthLabel(Number(preMonth))) };
 };
 
-await import("../../background.js");
+await import("../../src/worker/background.js");
 assert.ok(messageListener, "worker must register a message listener");
 
 const send = (request) =>

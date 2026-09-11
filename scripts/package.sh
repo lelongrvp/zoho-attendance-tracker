@@ -5,6 +5,12 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
+# Disabled during the 1.9.0 conversion. This script archives runtime files from
+# HEAD, and the runtime now comes out of a Vite build instead - phase 6 rewrites
+# it to zip dist/. Failing loudly beats shipping a zip of files that moved.
+echo "package.sh is disabled until the 1.9.0 conversion lands - run 'pnpm build' and zip dist/ by hand if you need a build now" >&2
+exit 1
+
 git="/opt/homebrew/bin/git"
 version=$(python3 -c "import json; print(json.load(open('manifest.json'))['version'])")
 

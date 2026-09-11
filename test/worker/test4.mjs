@@ -3,7 +3,7 @@ import assert from "node:assert";
 // ---- computeWorkedMs across both possible Zoho entry shapes
 globalThis.chrome = { storage: { local: { get: async () => ({}) } } };
 const { computeWorkedMs, computeWorkedTargets, computeEffectiveTargets, DEFAULT_POLICY } =
-  await import("../../policy.js");
+  await import("../../src/lib/policy.js");
 
 const now = new Date(2026, 8, 11, 15, 0, 0);
 const HOUR = 3600 * 1000;

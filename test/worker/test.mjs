@@ -44,7 +44,7 @@ const month = (extra) => ({
 });
 globalThis.fetch = async () => ({ ok: true, json: async () => month({}) });
 
-await import("../../background.js");
+await import("../../src/worker/background.js");
 
 const send = () => new Promise((resolve) => {
   listeners.message({ action: "updateAttendance" }, {}, resolve);

@@ -31,7 +31,7 @@ globalThis.fetch = async () => ({ ok: true, json: async () => ({
     { fdate: "11-Sep-2026 - 09:29", tdate: "11-Sep-2026 - 11:53" },
     { fdate: "11-Sep-2026 - 13:00", tdate: "-" },
   ] } }) });
-await import("../../background.js");
+await import("../../src/worker/background.js");
 const send = () => new Promise((r) => listeners.m({ action: "updateAttendance" }, {}, r));
 const res = await send();
 assert.strictEqual(res.status, "success");

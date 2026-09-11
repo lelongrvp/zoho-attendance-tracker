@@ -34,16 +34,23 @@ export type StorageChanges = {
   };
 };
 
-export function onLocalChange(handle: (changes: StorageChanges) => void): void {
-  chrome.storage.onChanged.addListener(
-    (
-      changes: { [key: string]: chrome.storage.StorageChange },
-      area: string,
-    ): void => {
-      if (area !== "local") {
-        return;
-      }
-      handle(changes as StorageChanges);
-    },
-  );
+export type StorageChangeListener = (
+  changes: { [key: string]: chrome.storage.StorageChange },
+  area: string,
+) => void;
+
+export function onLocalChange(
+  handle: (changes: StorageChanges) => void,
+): StorageChangeListener {
+  const listener: StorageChangeListener = (
+    changes: { [key: string]: chrome.storage.StorageChange },
+    area: string,
+  ): void => {
+    if (area !== "local") {
+      return;
+    }
+    handle(changes as StorageChanges);
+  };
+  chrome.storage.onChanged.addListener(listener);
+  return listener;
 }

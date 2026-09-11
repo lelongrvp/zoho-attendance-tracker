@@ -1,0 +1,47 @@
+@import "tailwindcss";
+
+/* Defaults only; themes.ts overwrites these at runtime, so no dark: variant is ever needed. */
+@theme {
+  --color-paper: #fbf1c7;
+  --color-panel: #f9f5d7;
+
+  --color-ink: #3c3836;
+  --color-ink-2: #504945;
+  --color-ink-3: #665c54;
+  --color-ink-faint: #a89984;
+
+  --color-rule: #ebdbb2;
+  --color-rule-strong: #d5c4a1;
+
+  --color-stamp: #cc241d;
+  --color-stamp-tint: #f1d9b4;
+  --color-stamp-line: #e3b597;
+  --color-stamp-text: #9d0006;
+  --color-on-stamp: #fbf1c7;
+
+  --color-moss: #79740e;
+  --color-wash: #f2e5bc;
+  --color-amber: #d79921;
+  --color-on-amber: #3c3836;
+
+  --font-ui:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue",
+    Arial, sans-serif;
+  --font-num:
+    ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono",
+    monospace;
+
+  --radius-cell: 2px;
+  --radius-panel: 3px;
+}
+
+/* Holiday fill. The `background` shorthand wipes any bg-* on the same element. */
+@utility hatch {
+  background: repeating-linear-gradient(
+    -45deg,
+    var(--color-panel),
+    var(--color-panel) 3px,
+    var(--color-rule-strong) 3px,
+    var(--color-rule-strong) 6px
+  );
+}

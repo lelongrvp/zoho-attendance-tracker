@@ -1,6 +1,10 @@
+import type { Lang } from "./types.ts";
+
+export type Translator = (key: string, params?: Record<string, string | number>) => string;
+
 // Popup and notification strings. English is the fallback for any key a
 // language table is missing.
-const STRINGS = {
+const STRINGS: Record<Lang, Record<string, string>> = {
   en: {
     tabAttendance: "Attendance",
     tabCalendar: "Calendar",
@@ -161,7 +165,7 @@ const STRINGS = {
   },
 };
 
-const MONTHS = {
+const MONTHS: Record<Lang, string[]> = {
   en: [
     "Jan",
     "Feb",
@@ -191,41 +195,44 @@ const MONTHS = {
     "Thg 12",
   ],
 };
-const WEEKDAYS = {
+const WEEKDAYS: Record<Lang, string[]> = {
   en: ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
   vi: ["CN", "T2", "T3", "T4", "T5", "T6", "T7"],
 };
 
-export function normalizeLanguage(value) {
+export function normalizeLanguage(value: unknown): Lang {
   return value === "vi" ? "vi" : "en";
 }
 
-export function makeTranslator(lang) {
-  const table = STRINGS[normalizeLanguage(lang)];
-  return (key, params = {}) => {
-    let text = table[key] ?? STRINGS.en[key] ?? key;
+export function makeTranslator(lang: Lang): Translator {
+  const table: Record<string, string> = STRINGS[normalizeLanguage(lang)];
+  return (key: string, params: Record<string, string | number> = {}): string => {
+    let text: string = table[key] ?? STRINGS.en[key] ?? key;
     for (const [name, value] of Object.entries(params)) {
-      text = text.replace(`{${name}}`, value);
+      text = text.replace(`{${name}}`, String(value));
     }
     return text;
   };
 }
 
-export function monthNames(lang) {
+export function monthNames(lang: Lang): string[] {
   return MONTHS[normalizeLanguage(lang)];
 }
 
-export function weekdayNames(lang) {
+export function weekdayNames(lang: Lang): string[] {
   return WEEKDAYS[normalizeLanguage(lang)];
 }
 
 // Static labels carry data-i18n (textContent) or data-i18n-title (tooltip).
-export function applyStaticTranslations(root, translate) {
-  root.querySelectorAll("[data-i18n]").forEach((element) => {
-    element.textContent = translate(element.dataset.i18n);
+export function applyStaticTranslations(
+  root: ParentNode,
+  translate: Translator,
+): void {
+  root.querySelectorAll<HTMLElement>("[data-i18n]").forEach((element: HTMLElement): void => {
+    element.textContent = translate(element.dataset["i18n"] ?? "");
   });
-  root.querySelectorAll("[data-i18n-title]").forEach((element) => {
-    const text = translate(element.dataset.i18nTitle);
+  root.querySelectorAll<HTMLElement>("[data-i18n-title]").forEach((element: HTMLElement): void => {
+    const text: string = translate(element.dataset["i18nTitle"] ?? "");
     element.title = text;
     if (element.hasAttribute("aria-label")) {
       element.setAttribute("aria-label", text);

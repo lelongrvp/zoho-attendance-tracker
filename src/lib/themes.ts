@@ -1,11 +1,16 @@
-// Colorschemes for the Timecard design. A scheme supplies six base colors per
-// mode — paper, panel, ink, stamp, moss, amber — and the resolver derives the
-// eleven neutral/tint tokens by blending, so palettes stay maintainable and a
-// custom scheme is six color inputs, not seventeen. Any derived token can be
-// overridden per scheme (Gruvbox, the default, pins its full canonical set).
+import type {
+  BadgeColors,
+  DerivedColors,
+  Scheme,
+  SchemeColors,
+  ThemeMode,
+  Tokens,
+} from "./types.ts";
 
-function hexToRgb(hex) {
-  const value = hex.replace("#", "");
+type Rgb = [number, number, number];
+
+function hexToRgb(hex: string): Rgb {
+  const value: string = hex.replace("#", "");
   return [
     parseInt(value.slice(0, 2), 16),
     parseInt(value.slice(2, 4), 16),
@@ -13,22 +18,23 @@ function hexToRgb(hex) {
   ];
 }
 
-function rgbToHex([red, green, blue]) {
-  const channel = (component) =>
+function rgbToHex([red, green, blue]: Rgb): string {
+  const channel = (component: number): string =>
     Math.round(Math.min(255, Math.max(0, component)))
       .toString(16)
       .padStart(2, "0");
   return `#${channel(red)}${channel(green)}${channel(blue)}`;
 }
 
-function blend(fromHex, toHex, amount) {
-  const from = hexToRgb(fromHex);
-  const to = hexToRgb(toHex);
-  return rgbToHex(
-    from.map(
-      (component, index) => component + (to[index] - component) * amount,
-    ),
-  );
+function blend(fromHex: string, toHex: string, amount: number): string {
+  const [fromRed, fromGreen, fromBlue] = hexToRgb(fromHex);
+  const [toRed, toGreen, toBlue] = hexToRgb(toHex);
+  const mix = (from: number, to: number): number => from + (to - from) * amount;
+  return rgbToHex([
+    mix(fromRed, toRed),
+    mix(fromGreen, toGreen),
+    mix(fromBlue, toBlue),
+  ]);
 }
 
 export const SCHEMES = {
@@ -241,33 +247,51 @@ export const SCHEMES = {
       amber: "#e6c384",
     },
   },
-};
+} satisfies Record<string, Scheme>;
 
-export function listSchemes() {
-  return Object.entries(SCHEMES).map(([id, scheme]) => ({
-    id,
-    name: scheme.name,
-  }));
-}
-
-const REQUIRED = ["paper", "panel", "ink", "stamp", "moss", "amber"];
-
-function isValidBase(base) {
-  return (
-    base &&
-    REQUIRED.every((key) => /^#[0-9a-fA-F]{6}$/.test(String(base[key] || "")))
+export function listSchemes(): { id: string; name: string }[] {
+  return Object.entries(SCHEMES).map(
+    ([id, scheme]: [string, Scheme]): { id: string; name: string } => ({
+      id,
+      name: scheme.name,
+    }),
   );
 }
 
-export function resolveTokens(schemeId, mode, customScheme) {
-  let scheme = schemeId === "custom" ? customScheme : SCHEMES[schemeId];
-  let base = scheme?.[mode];
-  if (!isValidBase(base)) {
-    base = SCHEMES.gruvbox[mode];
-  }
+const REQUIRED: readonly (keyof SchemeColors)[] = [
+  "paper",
+  "panel",
+  "ink",
+  "stamp",
+  "moss",
+  "amber",
+] as const;
 
-  const { paper, panel, ink, stamp, moss, amber } = base;
-  const derived = {
+function isValidBase(base: SchemeColors | undefined): base is SchemeColors {
+  return (
+    Boolean(base) &&
+    REQUIRED.every((key: keyof SchemeColors): boolean =>
+      /^#[0-9a-fA-F]{6}$/.test(String(base?.[key] ?? "")),
+    )
+  );
+}
+
+export function resolveTokens(
+  schemeId: string | undefined,
+  mode: ThemeMode,
+  customScheme?: Scheme | null,
+): Tokens {
+  const scheme: Scheme | null | undefined =
+    schemeId === "custom"
+      ? customScheme
+      : (SCHEMES as Record<string, Scheme>)[schemeId ?? ""];
+  const candidate: SchemeColors | undefined = scheme?.[mode];
+  const base: SchemeColors = isValidBase(candidate)
+    ? candidate
+    : SCHEMES.gruvbox[mode];
+
+  const { paper, ink, stamp } = base;
+  const derived: DerivedColors = {
     ink2: blend(ink, paper, 0.18),
     ink3: blend(ink, paper, 0.35),
     inkFaint: blend(ink, paper, 0.58),
@@ -280,42 +304,46 @@ export function resolveTokens(schemeId, mode, customScheme) {
     onStamp: paper,
     onAmber: mode === "light" ? ink : paper,
   };
-  const tokens = { paper, panel, ink, stamp, moss, amber, ...derived, ...base };
+
+  const tokens: DerivedColors & SchemeColors = { ...derived, ...base };
 
   return {
-    "--paper": tokens.paper,
-    "--panel": tokens.panel,
-    "--ink": tokens.ink,
-    "--ink-2": tokens.ink2,
-    "--ink-3": tokens.ink3,
-    "--ink-faint": tokens.inkFaint,
-    "--rule": tokens.rule,
-    "--rule-strong": tokens.ruleStrong,
-    "--wash": tokens.wash,
-    "--stamp": tokens.stamp,
-    "--stamp-tint": tokens.stampTint,
-    "--stamp-line": tokens.stampLine,
-    "--stamp-text": tokens.stampText,
-    "--on-stamp": tokens.onStamp,
-    "--moss": tokens.moss,
-    "--amber": tokens.amber,
-    "--on-amber": tokens.onAmber,
+    "--color-paper": tokens.paper,
+    "--color-panel": tokens.panel,
+    "--color-ink": tokens.ink,
+    "--color-ink-2": tokens.ink2,
+    "--color-ink-3": tokens.ink3,
+    "--color-ink-faint": tokens.inkFaint,
+    "--color-rule": tokens.rule,
+    "--color-rule-strong": tokens.ruleStrong,
+    "--color-wash": tokens.wash,
+    "--color-stamp": tokens.stamp,
+    "--color-stamp-tint": tokens.stampTint,
+    "--color-stamp-line": tokens.stampLine,
+    "--color-stamp-text": tokens.stampText,
+    "--color-on-stamp": tokens.onStamp,
+    "--color-moss": tokens.moss,
+    "--color-amber": tokens.amber,
+    "--color-on-amber": tokens.onAmber,
   };
 }
 
-export function applyTokens(rootElement, tokens) {
-  for (const [name, value] of Object.entries(tokens)) {
+export function applyTokens(rootElement: HTMLElement, tokens: Tokens): void {
+  for (const [name, value] of Object.entries(tokens) as [string, string][]) {
     rootElement.style.setProperty(name, value);
+    // The unconverted popup stylesheet still reads the unprefixed names; drops with phase 4.
+    rootElement.style.setProperty(name.replace("--color-", "--"), value);
   }
 }
 
-// The toolbar badge is not themed by light/dark, so it always uses the
-// scheme's light palette — mid-tone values that carry white badge text.
-export function badgeColors(schemeId, customScheme) {
-  const tokens = resolveTokens(schemeId, "light", customScheme);
+export function badgeColors(
+  schemeId: string | undefined,
+  customScheme?: Scheme | null,
+): BadgeColors {
+  const tokens: Tokens = resolveTokens(schemeId, "light", customScheme);
   return {
-    ok: tokens["--moss"],
-    late: tokens["--stamp"],
-    neutral: tokens["--ink-3"],
+    ok: tokens["--color-moss"],
+    late: tokens["--color-stamp"],
+    neutral: tokens["--color-ink-3"],
   };
 }

@@ -16,15 +16,15 @@ import {
   readPolicy,
   toLocalDateKey,
   DEFAULT_POLICY,
-} from "./policy.js";
+} from "../lib/policy.ts";
 import {
   applyStaticTranslations,
   makeTranslator,
   monthNames,
   normalizeLanguage,
   weekdayNames,
-} from "./i18n.js";
-import { applyTokens, resolveTokens } from "./themes.js";
+} from "../lib/i18n.ts";
+import { applyTokens, resolveTokens } from "../lib/themes.ts";
 
 const AUTO_REFRESH_AFTER_MS = 5 * 60 * 1000;
 
@@ -523,8 +523,7 @@ document.addEventListener("DOMContentLoaded", function () {
           // problem. An unrecognised status leaves the cell exactly as it
           // rendered before this existed.
           cell.classList.add(
-            classifyNonWorkingDay(day, policy) ||
-              (isFuture ? "future" : "off"),
+            classifyNonWorkingDay(day, policy) || (isFuture ? "future" : "off"),
           );
         }
         if (tsecs > 0) {
@@ -842,7 +841,10 @@ document.addEventListener("DOMContentLoaded", function () {
   });
 
   function stepCalendar(step) {
-    const next = Math.min(0, Math.max(MIN_CALENDAR_OFFSET, calendarOffset + step));
+    const next = Math.min(
+      0,
+      Math.max(MIN_CALENDAR_OFFSET, calendarOffset + step),
+    );
     if (next === calendarOffset) {
       return;
     }

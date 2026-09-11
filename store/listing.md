@@ -68,7 +68,7 @@ when their daily working-time targets are reached.
 ## Data usage disclosures (Privacy tab)
 
 - Collects: no user data is collected or transmitted; attendance data is
-  processed locally only. (Tick "Website content" as *accessed*, mark all
+  processed locally only. (Tick "Website content" as _accessed_, mark all
   transmission/sale/unrelated-use boxes **No**.)
 - Privacy policy URL: host `PRIVACY.md` publicly (e.g. a GitHub repo) and
   paste its URL.

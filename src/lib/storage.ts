@@ -1,12 +1,6 @@
 import type { StorageShape, StorageKey } from "./types.ts";
 
-// chrome.storage.local typed against StorageShape. Every read and write in the
-// extension goes through here, which is the only thing that makes the shape
-// worth declaring - a call site that reaches for chrome.storage directly gets
-// `any` back and the type becomes decorative.
-//
-// Values are all optional on read: the store starts empty on a fresh install,
-// and a key the worker has not written yet is undefined rather than a default.
+// chrome.storage.local typed against StorageShape.
 
 export async function read<K extends StorageKey>(
   keys: K[],
@@ -19,9 +13,8 @@ export async function read<K extends StorageKey>(
 export async function readOne<K extends StorageKey>(
   key: K,
 ): Promise<StorageShape[K] | undefined> {
-  const stored: Partial<Pick<StorageShape, K>> = (await chrome.storage.local.get(
-    key,
-  )) as Partial<Pick<StorageShape, K>>;
+  const stored: Partial<Pick<StorageShape, K>> =
+    (await chrome.storage.local.get(key)) as Partial<Pick<StorageShape, K>>;
   return stored[key];
 }
 
@@ -33,20 +26,20 @@ export async function remove(keys: StorageKey | StorageKey[]): Promise<void> {
   await chrome.storage.local.remove(keys);
 }
 
-/**
- * A change record for one key, as `chrome.storage.onChanged` delivers it.
- * Typed per key so a listener narrowing on `changes.attendanceData` gets the
- * real shape rather than `any`.
- */
+// A change record for one key, as `chrome.storage.onChanged` delivers it.
 export type StorageChanges = {
-  [K in StorageKey]?: { oldValue?: StorageShape[K]; newValue?: StorageShape[K] };
+  [K in StorageKey]?: {
+    oldValue?: StorageShape[K];
+    newValue?: StorageShape[K];
+  };
 };
 
-export function onLocalChange(
-  handle: (changes: StorageChanges) => void,
-): void {
+export function onLocalChange(handle: (changes: StorageChanges) => void): void {
   chrome.storage.onChanged.addListener(
-    (changes: { [key: string]: chrome.storage.StorageChange }, area: string): void => {
+    (
+      changes: { [key: string]: chrome.storage.StorageChange },
+      area: string,
+    ): void => {
       if (area !== "local") {
         return;
       }

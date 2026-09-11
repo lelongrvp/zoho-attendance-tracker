@@ -7,12 +7,6 @@ import type {
   Tokens,
 } from "./types.ts";
 
-// Colorschemes for the Timecard design. A scheme supplies six base colors per
-// mode — paper, panel, ink, stamp, moss, amber — and the resolver derives the
-// eleven neutral/tint tokens by blending, so palettes stay maintainable and a
-// custom scheme is six color inputs, not seventeen. Any derived token can be
-// overridden per scheme (Gruvbox, the default, pins its full canonical set).
-
 type Rgb = [number, number, number];
 
 function hexToRgb(hex: string): Rgb {
@@ -310,9 +304,7 @@ export function resolveTokens(
     onStamp: paper,
     onAmber: mode === "light" ? ink : paper,
   };
-  // base last so a scheme that pins a derived token beats the blend. The six
-  // base colours are already in `base`, so listing them here would only be
-  // overwritten by the same values.
+
   const tokens: DerivedColors & SchemeColors = { ...derived, ...base };
 
   return {
@@ -342,8 +334,6 @@ export function applyTokens(rootElement: HTMLElement, tokens: Tokens): void {
   }
 }
 
-// The toolbar badge is not themed by light/dark, so it always uses the
-// scheme's light palette — mid-tone values that carry white badge text.
 export function badgeColors(
   schemeId: string | undefined,
   customScheme?: Scheme | null,

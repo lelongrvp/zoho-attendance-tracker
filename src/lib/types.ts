@@ -1,35 +1,18 @@
-// The shapes the worker, the popup and the options page all agree on.
-//
-// Two of these describe data this extension does not control. Zoho's endpoint
-// is undocumented and its response was inferred from the original code and
-// confirmed field by field against live sessions (see README, "Unverified
-// assumptions"). Where a field is still a guess, the type says so rather than
-// a comment: `approvalInfo` is `unknown`, which forces every use site to
-// narrow it instead of trusting it.
-
 export type Lang = "en" | "vi";
 export type ThemeMode = "light" | "dark";
 export type TargetMode = "offset" | "worked";
 
-// ---------------------------------------------------------------- Zoho
-
-/** One punch pair. An open session carries the literal placeholder `tdate: "-"`. */
+// Zoho
 export type ZohoEntry = {
   fdate?: string;
   tdate?: string;
 };
 
-/**
- * One day of the attendance response. Zoho sends numbers as strings often
- * enough that the numeric fields accept both; every read goes through
- * `Number(...)` already.
- */
 export type ZohoDay = {
   orgdate: string;
   tsecs?: number | string;
   status?: string;
   leaveDaysTaken?: number | string;
-  /** Unverified: present means an attendance request, but the shape is not confirmed. */
   approvalInfo?: unknown;
 };
 
@@ -43,7 +26,7 @@ export type ArchivedMonth = {
   dayList: Record<string, ZohoDay>;
 };
 
-// ---------------------------------------------------------------- policy
+// Policy
 
 export type Policy = {
   cycleStartDay: number;
@@ -53,15 +36,12 @@ export type Policy = {
   earlyFullTimeHours: number;
   latePartTimeHours: number;
   lateFullTimeHours: number;
-  /** Minutes past midnight after which a check-in counts as a late start. */
   lateStartAfterMinutes: number;
-  /** Minutes past midnight after which a target is flagged as a long day. */
   lateThresholdMinutes: number;
   targetMode: TargetMode;
   shortDayQuota: number;
   requestQuota: number;
   violationQuota: number;
-  /** Keywords matched case-insensitively anywhere in a day's `status`. */
   holidayStatuses: string[];
   weekendStatuses: string[];
   staleAfterMinutes: number;
@@ -74,7 +54,6 @@ export type Targets = {
 
 export type ActiveCheckin = {
   checkin: Date;
-  /** A late start can push the full-time target past midnight. */
   isFromYesterday: boolean;
 };
 
@@ -86,7 +65,6 @@ export type WorkedTime = {
 /** Targets projected from hours actually worked, carrying the work they used. */
 export type WorkedTargets = Targets & WorkedTime;
 
-/** One distinct `status` string seen in the cache, with how often. */
 export type StatusCount = {
   status: string;
   count: number;
@@ -99,9 +77,8 @@ export type Cycle = {
 
 export type NonWorkingKind = "holiday" | "weekend" | "";
 
-// ---------------------------------------------------------------- theming
+// Theming
 
-/** The eleven neutrals and tints the resolver derives by blending. */
 export type DerivedColors = {
   ink2: string;
   ink3: string;
@@ -116,10 +93,6 @@ export type DerivedColors = {
   onAmber: string;
 };
 
-/**
- * Six base colours per mode. Any derived token may also be pinned - Gruvbox,
- * the default, pins its full canonical set rather than accepting blends.
- */
 export type SchemeColors = {
   paper: string;
   panel: string;
@@ -135,9 +108,6 @@ export type Scheme = {
   dark: SchemeColors;
 };
 
-/** Every CSS custom property the stylesheet reads. Naming them here is what
- * makes `tokens["--moss"]` a string rather than a maybe-string, and what makes
- * a typo in a token name a compile error instead of a transparent element. */
 export type TokenName =
   | "--paper"
   | "--panel"
@@ -165,18 +135,13 @@ export type BadgeColors = {
   neutral: string;
 };
 
-// ---------------------------------------------------------------- storage
+// Storage
 
 export type LastError = {
   message: string;
   at: number;
 };
 
-/**
- * Everything this extension keeps in `chrome.storage.local`. It is the only
- * store: the worker writes, both pages read, and `chrome.storage.onChanged`
- * is what keeps them in step.
- */
 export type StorageShape = {
   attendanceData: AttendanceData;
   archivedMonths: Record<string, ArchivedMonth>;
@@ -190,7 +155,6 @@ export type StorageShape = {
   scheme: string;
   customScheme: Scheme;
   activeTab: "attendance" | "calendar";
-  /** Which gates have already fired today, so a re-arm does not re-notify. */
   gateState: { date: string; fired: string[] };
 };
 

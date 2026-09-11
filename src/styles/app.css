@@ -1,23 +1,6 @@
 @import "tailwindcss";
 
-/* The token contract.
- *
- * These values are Gruvbox light, and they are only the palette the page
- * wears before any JavaScript runs. themes.js resolves the real set at
- * runtime - six base colours per mode, eleven more derived by blending - and
- * writes them onto the root element, where an inline style beats this block.
- *
- * Because Tailwind v4 compiles `bg-paper` to `background-color: var(--color-paper)`,
- * overriding the variable re-colours every utility instantly. That is the whole
- * mechanism behind ten colorschemes, a custom scheme, and both modes:
- *
- *   - no `dark:` variant is ever written. Mode is an input to the resolver,
- *     not a CSS state, so `bg-paper` is already correct in both.
- *   - no per-scheme classes exist. A scheme is eighteen variable writes.
- *
- * If a component wants a colour that is not here, add it to the resolver in
- * themes.js and to this block - never reach for a literal in JSX.
- */
+/* Defaults only; themes.ts overwrites these at runtime, so no dark: variant is ever needed. */
 @theme {
   --color-paper: #fbf1c7;
   --color-panel: #f9f5d7;
@@ -41,19 +24,18 @@
   --color-amber: #d79921;
   --color-on-amber: #3c3836;
 
-  --font-ui: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  --font-num: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+  --font-ui:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue",
+    Arial, sans-serif;
+  --font-num:
+    ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono",
+    monospace;
 
   --radius-cell: 2px;
   --radius-panel: 3px;
 }
 
-/* Patterns that would be unreadable as utilities. A holiday is hatched rather
- * than filled because every solid fill in the calendar means hours worked.
- *
- * Note the shorthand: `background` resets background-color, so `hatch` wipes
- * any `bg-*` on the same element regardless of class order. Hatched cells get
- * no fill utility - that is the intent, but it is silent if you forget. */
+/* Holiday fill. The `background` shorthand wipes any bg-* on the same element. */
 @utility hatch {
   background: repeating-linear-gradient(
     -45deg,

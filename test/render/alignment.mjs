@@ -1,13 +1,5 @@
-// Renders the popup in headless Chrome and asserts the calendar's alignment
-// invariant: dates differ by colour only, never by position.
-//
-// Why a real browser: the invariant is about layout, and the two bugs it
-// exists to catch (an outline painting outside its box, a bare `.today` rule
-// leaking padding from an unrelated panel) are both invisible to jsdom.
-//
+// Asserts the calendar's alignment invariant in headless Chrome: dates differ by colour only.
 // Usage: node test/render/alignment.mjs [pathToPopupHtml]
-//   defaults to the repo's popup.html; pass dist/popup/index.html after the
-//   Vite conversion to test the built artifact instead of the source.
 
 import { spawn } from "node:child_process";
 import { mkdtemp, cp, readFile, writeFile, rm } from "node:fs/promises";
@@ -78,14 +70,8 @@ const work = await mkdtemp(join(tmpdir(), "attendance-render-"));
 let failures = 0;
 
 try {
-  // Serve from the root the page's own asset URLs are relative to: the built
-  // extension references /assets/... from the extension root, while the source
-  // popup references siblings. Copying the wrong root gives a blank page and a
-  // confusing failure rather than an honest one.
-  // The page's module imports reach outside its own folder (src/popup/popup.js
-  // imports ../lib/policy.js), so serving the folder alone yields a blank page
-  // and a misleading "0 cells" failure. Serve the tree the imports resolve
-  // against: dist for a built page, src for a source one.
+  // Serve the root the page's asset URLs resolve against, or it renders blank.
+  // Serve the tree the imports resolve against, or the page renders blank.
   const distRoot = resolve(repoRoot, "dist");
   const srcRoot = resolve(repoRoot, "src");
   const serveRoot = pagePath.startsWith(distRoot)

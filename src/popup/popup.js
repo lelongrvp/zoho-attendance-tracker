@@ -523,8 +523,7 @@ document.addEventListener("DOMContentLoaded", function () {
           // problem. An unrecognised status leaves the cell exactly as it
           // rendered before this existed.
           cell.classList.add(
-            classifyNonWorkingDay(day, policy) ||
-              (isFuture ? "future" : "off"),
+            classifyNonWorkingDay(day, policy) || (isFuture ? "future" : "off"),
           );
         }
         if (tsecs > 0) {
@@ -842,7 +841,10 @@ document.addEventListener("DOMContentLoaded", function () {
   });
 
   function stepCalendar(step) {
-    const next = Math.min(0, Math.max(MIN_CALENDAR_OFFSET, calendarOffset + step));
+    const next = Math.min(
+      0,
+      Math.max(MIN_CALENDAR_OFFSET, calendarOffset + step),
+    );
     if (next === calendarOffset) {
       return;
     }

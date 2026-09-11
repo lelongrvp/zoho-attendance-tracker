@@ -1,21 +1,5 @@
-// Enforces the project's explicit-types convention on the parts TypeScript
-// cannot check for itself.
-//
-// tsconfig catches implicit `any`, unchecked index access and unused bindings,
-// but it is perfectly happy to infer the type of every `const` and every
-// function return. This project is not: a type that is written down is a type
-// someone decided, and a type that is inferred is a type nobody reviewed.
-//
-// A declaration counts as typed when the type is visible to the reader without
-// consulting the checker:
-//
-//   const total: number = ...              an annotation
-//   const set = new Set<string>()          a type argument on the expression
-//   const fn = (x: number): string => ...  a fully typed function expression
-//   const table = { ... } satisfies Shape  a satisfies clause
-//   const value = raw as Shape             a cast
-//
-// Run by scripts/test.sh.
+// Fails on any declaration or function return without a written type.
+// Counts an annotation, a type argument, a satisfies clause, a cast or a typed arrow as written.
 
 import { readFile, readdir } from "node:fs/promises";
 import { join, extname } from "node:path";
@@ -34,9 +18,7 @@ async function walk(dir) {
   return found;
 }
 
-// Reads forward until brackets balance, so a 200-line object literal with a
-// trailing `satisfies` is judged on the whole statement rather than on its
-// first three lines.
+// Reads forward until brackets balance, so a trailing `satisfies` is still seen.
 function statementFrom(lines, start) {
   let depth = 0;
   const collected = [];
@@ -52,9 +34,7 @@ function statementFrom(lines, start) {
   return collected.join("\n");
 }
 
-// Everything from a function's opening paren past its match, so the return
-// type is found even when parameters or the return type contain braces -
-// `({ allowElapsed }): Active | null` defeats any brace-splitting shortcut.
+// Balances parens, because both parameters and return types can contain braces.
 function signatureFrom(lines, start) {
   let depth = 0;
   let opened = false;

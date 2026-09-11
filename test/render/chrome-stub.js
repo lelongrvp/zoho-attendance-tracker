@@ -1,9 +1,4 @@
-// Minimal `chrome` global, injected before the popup's module script so the
-// popup renders from fixture data instead of a live Zoho session. Values are
-// chosen to light up every calendar cell state at once: full days, short days,
-// a sub-6h day, leave, absence, a holiday, weekends, attendance requests, and
-// today - because the invariant this harness checks is that none of them move
-// the date glyph.
+// Minimal `chrome` global with fixture data covering every calendar cell state at once.
 const key = (date) =>
   `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 
@@ -57,9 +52,7 @@ globalThis.chrome = {
   runtime: { sendMessage: async () => ({ status: "success" }), openOptionsPage: () => {} },
 };
 
-// The measurement: every date must occupy an identical box and sit at an
-// identical offset inside it. Measuring the box alone has missed two real
-// bugs, so the glyph is measured with a Range.
+// Measures the glyph with a Range, not the box: the box alone has missed two real bugs.
 setTimeout(() => {
   const cells = [...document.querySelectorAll(".cal-cell:not(.spacer)")];
   const geometries = new Set();

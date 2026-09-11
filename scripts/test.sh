@@ -33,6 +33,9 @@ pnpm -s typecheck && echo "  clean"
 echo "\n--- build ---"
 pnpm -s build >/dev/null && echo "  dist/ built"
 
+echo "\n--- options page round-trip ---"
+"$node_bin" test/render/options.mjs
+
 echo "\n--- calendar alignment (against the built extension) ---"
 "$node_bin" test/render/alignment.mjs dist/popup/index.html
 

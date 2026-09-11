@@ -308,29 +308,31 @@ export function resolveTokens(
   const tokens: DerivedColors & SchemeColors = { ...derived, ...base };
 
   return {
-    "--paper": tokens.paper,
-    "--panel": tokens.panel,
-    "--ink": tokens.ink,
-    "--ink-2": tokens.ink2,
-    "--ink-3": tokens.ink3,
-    "--ink-faint": tokens.inkFaint,
-    "--rule": tokens.rule,
-    "--rule-strong": tokens.ruleStrong,
-    "--wash": tokens.wash,
-    "--stamp": tokens.stamp,
-    "--stamp-tint": tokens.stampTint,
-    "--stamp-line": tokens.stampLine,
-    "--stamp-text": tokens.stampText,
-    "--on-stamp": tokens.onStamp,
-    "--moss": tokens.moss,
-    "--amber": tokens.amber,
-    "--on-amber": tokens.onAmber,
+    "--color-paper": tokens.paper,
+    "--color-panel": tokens.panel,
+    "--color-ink": tokens.ink,
+    "--color-ink-2": tokens.ink2,
+    "--color-ink-3": tokens.ink3,
+    "--color-ink-faint": tokens.inkFaint,
+    "--color-rule": tokens.rule,
+    "--color-rule-strong": tokens.ruleStrong,
+    "--color-wash": tokens.wash,
+    "--color-stamp": tokens.stamp,
+    "--color-stamp-tint": tokens.stampTint,
+    "--color-stamp-line": tokens.stampLine,
+    "--color-stamp-text": tokens.stampText,
+    "--color-on-stamp": tokens.onStamp,
+    "--color-moss": tokens.moss,
+    "--color-amber": tokens.amber,
+    "--color-on-amber": tokens.onAmber,
   };
 }
 
 export function applyTokens(rootElement: HTMLElement, tokens: Tokens): void {
   for (const [name, value] of Object.entries(tokens) as [string, string][]) {
     rootElement.style.setProperty(name, value);
+    // The unconverted popup stylesheet still reads the unprefixed names; drops with phase 4.
+    rootElement.style.setProperty(name.replace("--color-", "--"), value);
   }
 }
 
@@ -340,8 +342,8 @@ export function badgeColors(
 ): BadgeColors {
   const tokens: Tokens = resolveTokens(schemeId, "light", customScheme);
   return {
-    ok: tokens["--moss"],
-    late: tokens["--stamp"],
-    neutral: tokens["--ink-3"],
+    ok: tokens["--color-moss"],
+    late: tokens["--color-stamp"],
+    neutral: tokens["--color-ink-3"],
   };
 }

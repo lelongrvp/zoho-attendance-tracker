@@ -109,23 +109,23 @@ export type Scheme = {
 };
 
 export type TokenName =
-  | "--paper"
-  | "--panel"
-  | "--ink"
-  | "--ink-2"
-  | "--ink-3"
-  | "--ink-faint"
-  | "--rule"
-  | "--rule-strong"
-  | "--wash"
-  | "--stamp"
-  | "--stamp-tint"
-  | "--stamp-line"
-  | "--stamp-text"
-  | "--on-stamp"
-  | "--moss"
-  | "--amber"
-  | "--on-amber";
+  | "--color-paper"
+  | "--color-panel"
+  | "--color-ink"
+  | "--color-ink-2"
+  | "--color-ink-3"
+  | "--color-ink-faint"
+  | "--color-rule"
+  | "--color-rule-strong"
+  | "--color-wash"
+  | "--color-stamp"
+  | "--color-stamp-tint"
+  | "--color-stamp-line"
+  | "--color-stamp-text"
+  | "--color-on-stamp"
+  | "--color-moss"
+  | "--color-amber"
+  | "--color-on-amber";
 
 export type Tokens = Record<TokenName, string>;
 

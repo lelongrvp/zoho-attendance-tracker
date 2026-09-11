@@ -4,8 +4,8 @@ import {
   collectStatuses,
   pad,
   readPolicy,
-} from "../lib/policy.js";
-import { SCHEMES, applyTokens, listSchemes, resolveTokens } from "../lib/themes.js";
+} from "../lib/policy.ts";
+import { SCHEMES, applyTokens, listSchemes, resolveTokens } from "../lib/themes.ts";
 
 const COLOR_KEYS = ["paper", "panel", "ink", "stamp", "moss", "amber"];
 

@@ -3,7 +3,11 @@
     "target": "ES2022",
     "module": "ESNext",
     "moduleResolution": "bundler",
-    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "lib": [
+      "ES2022",
+      "DOM",
+      "DOM.Iterable"
+    ],
     "jsx": "react-jsx",
     "jsxImportSource": "preact",
     "strict": true,
@@ -13,7 +17,15 @@
     "allowJs": true,
     "checkJs": false,
     "skipLibCheck": true,
-    "types": ["chrome", "vite/client"]
+    "types": [
+      "chrome",
+      "vite/client"
+    ],
+    "allowImportingTsExtensions": true
   },
-  "include": ["src", "test", "vite.config.ts"]
+  "include": [
+    "src",
+    "test",
+    "vite.config.ts"
+  ]
 }

@@ -3,7 +3,7 @@ const warns = [];
 const realWarn = console.warn;
 console.warn = (...args) => warns.push(args.join(" "));
 globalThis.chrome = { storage: { local: { get: async () => ({}) } } };
-const { parseZohoTimestamp, computeWorkedMs, findCheckin } = await import("../../src/lib/policy.js");
+const { parseZohoTimestamp, computeWorkedMs, findCheckin } = await import("../../src/lib/policy.ts");
 
 // 1. unknown format -> null, not a guessed Date
 assert.strictEqual(parseZohoTimestamp("garbage-value"), null);

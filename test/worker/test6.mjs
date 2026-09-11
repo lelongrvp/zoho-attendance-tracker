@@ -1,6 +1,6 @@
 import assert from "node:assert";
 globalThis.chrome = { storage: { local: { get: async () => ({}) } } };
-const { parseZohoTimestamp, computeWorkedMs, isZohoDate, isPlaceholderTime } = await import("../../src/lib/policy.js");
+const { parseZohoTimestamp, computeWorkedMs, isZohoDate, isPlaceholderTime } = await import("../../src/lib/policy.ts");
 
 // the live format from the user's worker console
 let parsed = parseZohoTimestamp("10-Sep-2026 - 09:29");

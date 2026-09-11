@@ -19,9 +19,9 @@ export async function read<K extends StorageKey>(
 export async function readOne<K extends StorageKey>(
   key: K,
 ): Promise<StorageShape[K] | undefined> {
-  const stored = (await chrome.storage.local.get(key)) as Partial<
-    Pick<StorageShape, K>
-  >;
+  const stored: Partial<Pick<StorageShape, K>> = (await chrome.storage.local.get(
+    key,
+  )) as Partial<Pick<StorageShape, K>>;
   return stored[key];
 }
 
@@ -45,10 +45,12 @@ export type StorageChanges = {
 export function onLocalChange(
   handle: (changes: StorageChanges) => void,
 ): void {
-  chrome.storage.onChanged.addListener((changes, area) => {
-    if (area !== "local") {
-      return;
-    }
-    handle(changes as StorageChanges);
-  });
+  chrome.storage.onChanged.addListener(
+    (changes: { [key: string]: chrome.storage.StorageChange }, area: string): void => {
+      if (area !== "local") {
+        return;
+      }
+      handle(changes as StorageChanges);
+    },
+  );
 }

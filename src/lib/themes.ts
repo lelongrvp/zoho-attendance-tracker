@@ -1,5 +1,6 @@
 import type {
   BadgeColors,
+  DerivedColors,
   Scheme,
   SchemeColors,
   ThemeMode,
@@ -15,7 +16,7 @@ import type {
 type Rgb = [number, number, number];
 
 function hexToRgb(hex: string): Rgb {
-  const value = hex.replace("#", "");
+  const value: string = hex.replace("#", "");
   return [
     parseInt(value.slice(0, 2), 16),
     parseInt(value.slice(2, 4), 16),
@@ -24,7 +25,7 @@ function hexToRgb(hex: string): Rgb {
 }
 
 function rgbToHex([red, green, blue]: Rgb): string {
-  const channel = (component: number) =>
+  const channel = (component: number): string =>
     Math.round(Math.min(255, Math.max(0, component)))
       .toString(16)
       .padStart(2, "0");
@@ -34,7 +35,7 @@ function rgbToHex([red, green, blue]: Rgb): string {
 function blend(fromHex: string, toHex: string, amount: number): string {
   const [fromRed, fromGreen, fromBlue] = hexToRgb(fromHex);
   const [toRed, toGreen, toBlue] = hexToRgb(toHex);
-  const mix = (from: number, to: number) => from + (to - from) * amount;
+  const mix = (from: number, to: number): number => from + (to - from) * amount;
   return rgbToHex([
     mix(fromRed, toRed),
     mix(fromGreen, toGreen),
@@ -255,18 +256,29 @@ export const SCHEMES = {
 } satisfies Record<string, Scheme>;
 
 export function listSchemes(): { id: string; name: string }[] {
-  return Object.entries(SCHEMES).map(([id, scheme]) => ({
-    id,
-    name: scheme.name,
-  }));
+  return Object.entries(SCHEMES).map(
+    ([id, scheme]: [string, Scheme]): { id: string; name: string } => ({
+      id,
+      name: scheme.name,
+    }),
+  );
 }
 
-const REQUIRED = ["paper", "panel", "ink", "stamp", "moss", "amber"] as const;
+const REQUIRED: readonly (keyof SchemeColors)[] = [
+  "paper",
+  "panel",
+  "ink",
+  "stamp",
+  "moss",
+  "amber",
+] as const;
 
 function isValidBase(base: SchemeColors | undefined): base is SchemeColors {
   return (
     Boolean(base) &&
-    REQUIRED.every((key) => /^#[0-9a-fA-F]{6}$/.test(String(base?.[key] ?? "")))
+    REQUIRED.every((key: keyof SchemeColors): boolean =>
+      /^#[0-9a-fA-F]{6}$/.test(String(base?.[key] ?? "")),
+    )
   );
 }
 
@@ -275,17 +287,17 @@ export function resolveTokens(
   mode: ThemeMode,
   customScheme?: Scheme | null,
 ): Tokens {
-  const scheme =
+  const scheme: Scheme | null | undefined =
     schemeId === "custom"
       ? customScheme
       : (SCHEMES as Record<string, Scheme>)[schemeId ?? ""];
-  const candidate = scheme?.[mode];
+  const candidate: SchemeColors | undefined = scheme?.[mode];
   const base: SchemeColors = isValidBase(candidate)
     ? candidate
     : SCHEMES.gruvbox[mode];
 
   const { paper, ink, stamp } = base;
-  const derived = {
+  const derived: DerivedColors = {
     ink2: blend(ink, paper, 0.18),
     ink3: blend(ink, paper, 0.35),
     inkFaint: blend(ink, paper, 0.58),
@@ -301,7 +313,7 @@ export function resolveTokens(
   // base last so a scheme that pins a derived token beats the blend. The six
   // base colours are already in `base`, so listing them here would only be
   // overwritten by the same values.
-  const tokens = { ...derived, ...base };
+  const tokens: DerivedColors & SchemeColors = { ...derived, ...base };
 
   return {
     "--paper": tokens.paper,
@@ -325,7 +337,7 @@ export function resolveTokens(
 }
 
 export function applyTokens(rootElement: HTMLElement, tokens: Tokens): void {
-  for (const [name, value] of Object.entries(tokens)) {
+  for (const [name, value] of Object.entries(tokens) as [string, string][]) {
     rootElement.style.setProperty(name, value);
   }
 }
@@ -336,7 +348,7 @@ export function badgeColors(
   schemeId: string | undefined,
   customScheme?: Scheme | null,
 ): BadgeColors {
-  const tokens = resolveTokens(schemeId, "light", customScheme);
+  const tokens: Tokens = resolveTokens(schemeId, "light", customScheme);
   return {
     ok: tokens["--moss"],
     late: tokens["--stamp"],

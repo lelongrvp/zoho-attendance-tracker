@@ -24,6 +24,9 @@ if [[ -f test/contract.sh ]]; then
   bash test/contract.sh | tail -3
 fi
 
+echo "\n--- explicit types ---"
+"$node_bin" test/annotations.mjs
+
 echo "\n--- typecheck ---"
 pnpm -s typecheck && echo "  clean"
 

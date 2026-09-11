@@ -83,6 +83,15 @@ export type WorkedTime = {
   isOpen: boolean;
 };
 
+/** Targets projected from hours actually worked, carrying the work they used. */
+export type WorkedTargets = Targets & WorkedTime;
+
+/** One distinct `status` string seen in the cache, with how often. */
+export type StatusCount = {
+  status: string;
+  count: number;
+};
+
 export type Cycle = {
   start: Date;
   end: Date;

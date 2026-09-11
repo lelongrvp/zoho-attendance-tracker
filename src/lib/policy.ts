@@ -4,7 +4,9 @@ import type {
   Cycle,
   NonWorkingKind,
   Policy,
+  StatusCount,
   Targets,
+  WorkedTargets,
   WorkedTime,
   ZohoDay,
   ZohoEntry,
@@ -51,7 +53,7 @@ export async function readPolicy(): Promise<Policy> {
 
 // Zoho renders attendance under an org-specific portal path. Override via
 // chrome.storage.local.portalId to use this extension in a different org.
-export const DEFAULT_PORTAL_ID = "hrportal1524046581683";
+export const DEFAULT_PORTAL_ID: string = "hrportal1524046581683";
 
 export async function readPortalId(): Promise<string> {
   return (await readOne("portalId")) || DEFAULT_PORTAL_ID;
@@ -62,9 +64,9 @@ export async function readPortalId(): Promise<string> {
 // and an open session's tdate is the literal placeholder "-". Optional seconds
 // and a 12-hour AM/PM suffix are accepted because Zoho's time format follows
 // the org's locale settings.
-const ZOHO_TIMESTAMP =
+const ZOHO_TIMESTAMP: RegExp =
   /^(\d{4})-(\d{2})-(\d{2})(?:[ T](\d{2}):(\d{2})(?::(\d{2}))?)?/;
-const ZOHO_DMY =
+const ZOHO_DMY: RegExp =
   /^(\d{1,2})-([A-Za-z]{3})-(\d{4})(?:\s*-?\s*(\d{1,2}):(\d{2})(?::(\d{2}))?(?:\s*([AaPp])\.?[Mm]\.?)?)?$/;
 const MONTH_INDEX: Record<string, number | undefined> = {
   jan: 0,
@@ -84,10 +86,10 @@ const MONTH_INDEX: Record<string, number | undefined> = {
 // A format Zoho emits that this file cannot parse is a bug to fix, not an
 // event to log once a second: the popup's timer loop re-parses the same
 // strings every tick, so unrecognised values are reported once each.
-const warnedValues = new Set<string>();
+const warnedValues: Set<string> = new Set<string>();
 
 function warnOnce(value: unknown): void {
-  const key = String(value);
+  const key: string = String(value);
   if (warnedValues.has(key) || warnedValues.size >= 50) {
     return;
   }
@@ -121,7 +123,7 @@ export function parseZohoTimestamp(value: unknown): Date | null {
     return null;
   }
 
-  const iso = ZOHO_TIMESTAMP.exec(String(value));
+  const iso: RegExpExecArray | null = ZOHO_TIMESTAMP.exec(String(value));
   if (iso) {
     const [, year, month, day, hours, minutes, seconds] = iso;
     return new Date(
@@ -134,12 +136,13 @@ export function parseZohoTimestamp(value: unknown): Date | null {
     );
   }
 
-  const dmy = ZOHO_DMY.exec(String(value).trim());
+  const dmy: RegExpExecArray | null = ZOHO_DMY.exec(String(value).trim());
   if (dmy) {
     const [, day, monthName, year, hours, minutes, seconds, meridiem] = dmy;
-    const monthIndex = MONTH_INDEX[String(monthName).toLowerCase()];
+    const monthIndex: number | undefined =
+      MONTH_INDEX[String(monthName).toLowerCase()];
     if (monthIndex !== undefined) {
-      let hour = Number(hours ?? 0);
+      let hour: number = Number(hours ?? 0);
       if (meridiem) {
         hour = (hour % 12) + (/[Pp]/.test(meridiem) ? 12 : 0);
       }
@@ -168,9 +171,10 @@ export function findCheckin(
   attendanceData: AttendanceData | undefined,
   date: Date,
 ): Date | null {
-  const entries = attendanceData?.entries?.[toLocalDateKey(date)] || [];
+  const entries: ZohoEntry[] =
+    attendanceData?.entries?.[toLocalDateKey(date)] ?? [];
   for (const entry of entries) {
-    const checkin = parseZohoTimestamp(entry.fdate);
+    const checkin: Date | null = parseZohoTimestamp(entry.fdate);
     if (checkin) {
       return checkin;
     }
@@ -191,14 +195,14 @@ export function findActiveCheckin(
   policy: Policy,
   { allowElapsed = false }: { allowElapsed?: boolean } = {},
 ): ActiveCheckin | null {
-  const todayCheckin = findCheckin(attendanceData, now);
+  const todayCheckin: Date | null = findCheckin(attendanceData, now);
   if (todayCheckin) {
     return { checkin: todayCheckin, isFromYesterday: false };
   }
 
-  const yesterday = new Date(now);
+  const yesterday: Date = new Date(now);
   yesterday.setDate(yesterday.getDate() - 1);
-  const yesterdayCheckin = findCheckin(attendanceData, yesterday);
+  const yesterdayCheckin: Date | null = findCheckin(attendanceData, yesterday);
   if (
     yesterdayCheckin &&
     (allowElapsed ||
@@ -214,12 +218,13 @@ export function findActiveCheckin(
 // A late start means no lunch break, so elapsed time equals worked time and
 // the required span shortens.
 export function computeTargets(checkinDate: Date, policy: Policy): Targets {
-  const checkinMinutes = checkinDate.getHours() * 60 + checkinDate.getMinutes();
-  const isLateStart = checkinMinutes >= policy.lateStartAfterMinutes;
-  const partTimeHours = isLateStart
+  const checkinMinutes: number =
+    checkinDate.getHours() * 60 + checkinDate.getMinutes();
+  const isLateStart: boolean = checkinMinutes >= policy.lateStartAfterMinutes;
+  const partTimeHours: number = isLateStart
     ? policy.latePartTimeHours
     : policy.earlyPartTimeHours;
-  const fullTimeHours = isLateStart
+  const fullTimeHours: number = isLateStart
     ? policy.lateFullTimeHours
     : policy.earlyFullTimeHours;
 
@@ -242,19 +247,19 @@ export function computeWorkedMs(
     return null;
   }
 
-  let workedMs = 0;
-  let openSince = null;
+  let workedMs: number = 0;
+  let openSince: Date | null = null;
 
   // Live shape confirmed: entries are {fdate, tdate} pairs, and an open
   // session carries tdate "-" — a truthy placeholder that must read as open,
   // not as a closed session ending at Invalid Date.
   if (dayEntries.some((entry) => entry.tdate !== undefined)) {
     for (const entry of dayEntries) {
-      const from = parseZohoTimestamp(entry.fdate);
+      const from: Date | null = parseZohoTimestamp(entry.fdate);
       if (!from) {
         continue;
       }
-      const to = parseZohoTimestamp(entry.tdate);
+      const to: Date | null = parseZohoTimestamp(entry.tdate);
       if (to) {
         workedMs += Math.max(0, to.getTime() - from.getTime());
       } else {
@@ -262,12 +267,12 @@ export function computeWorkedMs(
       }
     }
   } else {
-    const punches = dayEntries
-      .map((entry) => parseZohoTimestamp(entry.fdate))
-      .filter((punch) => punch !== null);
+    const punches: Date[] = dayEntries
+      .map((entry: ZohoEntry): Date | null => parseZohoTimestamp(entry.fdate))
+      .filter((punch: Date | null): punch is Date => punch !== null);
     for (let i = 0; i + 1 < punches.length; i += 2) {
-      const from = punches[i];
-      const to = punches[i + 1];
+      const from: Date | undefined = punches[i];
+      const to: Date | undefined = punches[i + 1];
       if (from && to) {
         workedMs += Math.max(0, to.getTime() - from.getTime());
       }
@@ -291,8 +296,8 @@ export function computeWorkedTargets(
   dayEntries: ZohoEntry[] | null | undefined,
   now: Date,
   policy: Policy,
-) {
-  const worked = computeWorkedMs(dayEntries, now);
+): WorkedTargets | null {
+  const worked: WorkedTime | null = computeWorkedMs(dayEntries, now);
   if (!worked) {
     return null;
   }
@@ -317,11 +322,15 @@ export function computeEffectiveTargets(
   active: ActiveCheckin,
   now: Date,
   policy: Policy,
-) {
+): Targets {
   if (policy.targetMode === "worked") {
-    const dayEntries =
+    const dayEntries: ZohoEntry[] | undefined =
       attendanceData?.entries?.[toLocalDateKey(active.checkin)];
-    const workedTargets = computeWorkedTargets(dayEntries, now, policy);
+    const workedTargets: WorkedTargets | null = computeWorkedTargets(
+      dayEntries,
+      now,
+      policy,
+    );
     if (workedTargets && workedTargets.isOpen) {
       return {
         partTime: workedTargets.partTime,
@@ -340,14 +349,14 @@ export function isPastLateThreshold(
   anchorDate: Date,
   policy: Policy,
 ): boolean {
-  const threshold = new Date(anchorDate ?? targetDate);
+  const threshold: Date = new Date(anchorDate ?? targetDate);
   threshold.setHours(0, policy.lateThresholdMinutes, 0, 0);
   return targetDate >= threshold;
 }
 
 // The cycle runs from cycleStartDay of one month to the day before it in the next.
 export function getCurrentCycle(now: Date, policy: Policy): Cycle {
-  const startDay = policy.cycleStartDay;
+  const startDay: number = policy.cycleStartDay;
   if (now.getDate() >= startDay) {
     return {
       start: new Date(now.getFullYear(), now.getMonth(), startDay),
@@ -371,15 +380,15 @@ export function getCurrentCycle(now: Date, policy: Policy): Cycle {
 // but no longer looks like attendance must not overwrite good data, because
 // the popup would render it as a wall of confident zeroes.
 export function isUsablePayload(data: unknown): boolean {
-  const days = Object.values(
+  const days: ZohoDay[] = Object.values(
     (data as AttendanceData | undefined)?.dayList ?? {},
   );
   if (days.length === 0) {
     return false;
   }
   return (
-    days.every((day) => isZohoDate(day.orgdate)) &&
-    days.some((day) => Number.isFinite(Number(day.tsecs)))
+    days.every((day: ZohoDay): boolean => isZohoDate(day.orgdate)) &&
+    days.some((day: ZohoDay): boolean => Number.isFinite(Number(day.tsecs)))
   );
 }
 
@@ -388,7 +397,7 @@ export function isUsablePayload(data: unknown): boolean {
 // only "is there something here" — defensively, because the plain truthiness
 // test it replaces counted an empty object or array as a used request.
 export function hasAttendanceRequest(day: ZohoDay | undefined): boolean {
-  const info = day?.approvalInfo;
+  const info: unknown = day?.approvalInfo;
   if (!info) {
     return false;
   }
@@ -409,8 +418,9 @@ export function describeAttendanceRequest(day: ZohoDay | undefined): string {
   if (!hasAttendanceRequest(day)) {
     return "";
   }
-  const info = day?.approvalInfo;
-  const text = typeof info === "string" ? info.trim() : JSON.stringify(info);
+  const info: unknown = day?.approvalInfo;
+  const text: string =
+    typeof info === "string" ? info.trim() : JSON.stringify(info);
   return text.length > 120 ? `${text.slice(0, 117)}...` : text;
 }
 
@@ -422,13 +432,13 @@ export function classifyNonWorkingDay(
   day: ZohoDay | undefined,
   policy: Policy,
 ): NonWorkingKind {
-  const status = (day?.status || "").trim().toLowerCase();
+  const status: string = (day?.status ?? "").trim().toLowerCase();
   if (!status) {
     return "";
   }
-  const matches = (words: string[] | undefined) =>
-    (words ?? []).some((word) => {
-      const needle = String(word).trim().toLowerCase();
+  const matches = (words: string[] | undefined): boolean =>
+    (words ?? []).some((word: string): boolean => {
+      const needle: string = String(word).trim().toLowerCase();
       return needle !== "" && status.includes(needle);
     });
   if (matches(policy.holidayStatuses)) {
@@ -445,28 +455,31 @@ export function classifyNonWorkingDay(
 // portal actually sends, rather than against what this file guesses it sends.
 export function collectStatuses(
   dayList: Record<string, ZohoDay> | ZohoDay[] | undefined,
-): { status: string; count: number }[] {
-  const counts = new Map();
+): StatusCount[] {
+  const counts: Map<string, number> = new Map<string, number>();
   Object.values(dayList || {}).forEach((day) => {
-    const status = (day?.status || "").trim();
+    const status: string = (day?.status ?? "").trim();
     if (status !== "") {
       counts.set(status, (counts.get(status) || 0) + 1);
     }
   });
   return [...counts.entries()]
-    .sort((first, second) => second[1] - first[1])
-    .map(([status, count]) => ({ status, count }));
+    .sort(
+      (first: [string, number], second: [string, number]): number =>
+        second[1] - first[1],
+    )
+    .map(([status, count]: [string, number]): StatusCount => ({ status, count }));
 }
 
 // The cycle `offset` cycles away from the one containing `now`; 0 is current,
 // -1 the previous one. Shifting the start date by whole months is safe
 // because cycleStartDay is a day every month has.
 export function getCycleAt(now: Date, policy: Policy, offset: number): Cycle {
-  const current = getCurrentCycle(now, policy);
+  const current: Cycle = getCurrentCycle(now, policy);
   if (offset === 0) {
     return current;
   }
-  const start = new Date(
+  const start: Date = new Date(
     current.start.getFullYear(),
     current.start.getMonth() + offset,
     policy.cycleStartDay,
@@ -491,9 +504,9 @@ export function monthKey(date: Date): string {
 // Every calendar month a cycle touches - two of them, unless cycleStartDay is
 // 1. Used to work out which months a past cycle needs before it can render.
 export function monthKeysInRange(start: Date, end: Date): string[] {
-  const keys = [];
-  const cursor = new Date(start.getFullYear(), start.getMonth(), 1);
-  const last = new Date(end.getFullYear(), end.getMonth(), 1);
+  const keys: string[] = [];
+  const cursor: Date = new Date(start.getFullYear(), start.getMonth(), 1);
+  const last: Date = new Date(end.getFullYear(), end.getMonth(), 1);
   while (cursor <= last) {
     keys.push(monthKey(cursor));
     cursor.setMonth(cursor.getMonth() + 1);

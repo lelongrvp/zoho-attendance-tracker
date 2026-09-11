@@ -9,6 +9,12 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
+# Gate logic keys off checkinDate.getHours() - a plain wall-clock read - so
+# the org's real timezone (Vietnam) has to be pinned here, or a runner
+# defaulting to UTC (GitHub Actions) reinterprets the same checkin instant as
+# a different hour and misclassifies early/late start.
+export TZ="Asia/Ho_Chi_Minh"
+
 node_bin="${NODE_BIN:-node}"
 
 echo "--- worker suites ---"

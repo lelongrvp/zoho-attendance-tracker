@@ -1,14 +1,19 @@
-import type { JSX } from "preact";
+import type {
+  ComponentChildren,
+  TargetedEvent,
+  TargetedInputEvent,
+  VNode,
+} from "preact";
 
 type FieldProps = {
   label: string;
   hint?: string;
   htmlFor?: string;
-  children: JSX.Element;
+  children: ComponentChildren;
 };
 
 /** One label/hint/control row. */
-export function Field({ label, hint, htmlFor, children }: FieldProps): JSX.Element {
+export function Field({ label, hint, htmlFor, children }: FieldProps): VNode {
   return (
     <div class="flex items-center justify-between gap-4 border-b border-rule py-[9px]">
       <label class="text-ink-2" for={htmlFor}>
@@ -22,11 +27,11 @@ export function Field({ label, hint, htmlFor, children }: FieldProps): JSX.Eleme
 
 type FieldsetProps = {
   legend: string;
-  children: (JSX.Element | null)[] | JSX.Element | null;
+  children: ComponentChildren;
 };
 
 /** A titled group of rows. */
-export function Fieldset({ legend, children }: FieldsetProps): JSX.Element {
+export function Fieldset({ legend, children }: FieldsetProps): VNode {
   return (
     <fieldset class="mt-[26px] border-none">
       <legend class="w-full border-b border-rule-strong pb-2 text-[10px] font-semibold tracking-[0.09em] text-ink-3 uppercase">
@@ -49,7 +54,7 @@ type NumberInputProps = {
   onValue: (value: string) => void;
 };
 
-export function NumberInput({ id, value, step, min, max, onValue }: NumberInputProps): JSX.Element {
+export function NumberInput({ id, value, step, min, max, onValue }: NumberInputProps): VNode {
   return (
     <input
       id={id}
@@ -59,7 +64,7 @@ export function NumberInput({ id, value, step, min, max, onValue }: NumberInputP
       step={step}
       min={min}
       max={max}
-      onInput={(event: JSX.TargetedEvent<HTMLInputElement, Event>): void =>
+      onInput={(event: TargetedInputEvent<HTMLInputElement>): void =>
         onValue(event.currentTarget.value)
       }
     />
@@ -72,14 +77,14 @@ type TimeInputProps = {
   onValue: (value: string) => void;
 };
 
-export function TimeInput({ id, value, onValue }: TimeInputProps): JSX.Element {
+export function TimeInput({ id, value, onValue }: TimeInputProps): VNode {
   return (
     <input
       id={id}
       type="time"
       class={`${CONTROL} w-[130px]`}
       value={value}
-      onInput={(event: JSX.TargetedEvent<HTMLInputElement, Event>): void =>
+      onInput={(event: TargetedInputEvent<HTMLInputElement>): void =>
         onValue(event.currentTarget.value)
       }
     />
@@ -92,7 +97,7 @@ type TextInputProps = {
   onValue: (value: string) => void;
 };
 
-export function TextInput({ id, value, onValue }: TextInputProps): JSX.Element {
+export function TextInput({ id, value, onValue }: TextInputProps): VNode {
   return (
     <input
       id={id}
@@ -100,7 +105,7 @@ export function TextInput({ id, value, onValue }: TextInputProps): JSX.Element {
       spellcheck={false}
       class={`${CONTROL} w-[240px] text-left`}
       value={value}
-      onInput={(event: JSX.TargetedEvent<HTMLInputElement, Event>): void =>
+      onInput={(event: TargetedInputEvent<HTMLInputElement>): void =>
         onValue(event.currentTarget.value)
       }
     />
@@ -114,18 +119,18 @@ type SelectProps = {
   onValue: (value: string) => void;
 };
 
-export function Select({ id, value, options, onValue }: SelectProps): JSX.Element {
+export function Select({ id, value, options, onValue }: SelectProps): VNode {
   return (
     <select
       id={id}
       class={CONTROL}
       value={value}
-      onChange={(event: JSX.TargetedEvent<HTMLSelectElement, Event>): void =>
+      onChange={(event: TargetedEvent<HTMLSelectElement, Event>): void =>
         onValue(event.currentTarget.value)
       }
     >
       {options.map(
-        (option: { value: string; label: string }): JSX.Element => (
+        (option: { value: string; label: string }): VNode => (
           <option key={option.value} value={option.value}>
             {option.label}
           </option>

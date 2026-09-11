@@ -1,4 +1,4 @@
-import type { JSX } from "preact";
+import type { TargetedInputEvent, VNode } from "preact";
 import type { Scheme, SchemeColors, ThemeMode } from "../../lib/types.ts";
 import { COLOR_KEYS } from "../form.ts";
 
@@ -17,7 +17,7 @@ const LABELS: Record<string, string> = {
 };
 
 /** Six colour inputs per mode; borders and tints are derived from them. */
-export function CustomScheme({ scheme, onChange }: CustomSchemeProps): JSX.Element {
+export function CustomScheme({ scheme, onChange }: CustomSchemeProps): VNode {
   const setColor = (mode: ThemeMode, key: keyof SchemeColors, value: string): void => {
     onChange({ ...scheme, [mode]: { ...scheme[mode], [key]: value } });
   };
@@ -29,13 +29,13 @@ export function CustomScheme({ scheme, onChange }: CustomSchemeProps): JSX.Eleme
         derived from these.
       </p>
       {(["light", "dark"] as ThemeMode[]).map(
-        (mode: ThemeMode): JSX.Element => (
+        (mode: ThemeMode): VNode => (
           <div key={mode} class="flex items-center gap-[10px] py-1">
             <span class="w-10 text-[10px] font-semibold tracking-[0.08em] text-ink-3 uppercase">
               {mode}
             </span>
             {COLOR_KEYS.map(
-              (key: keyof SchemeColors): JSX.Element => (
+              (key: keyof SchemeColors): VNode => (
                 <label
                   key={key}
                   class="flex flex-col items-center gap-[3px] text-[9.5px] text-ink-faint"
@@ -45,7 +45,7 @@ export function CustomScheme({ scheme, onChange }: CustomSchemeProps): JSX.Eleme
                     type="color"
                     class="h-[26px] w-10 cursor-pointer rounded-[3px] border border-rule-strong bg-panel p-px"
                     value={scheme[mode][key] ?? "#000000"}
-                    onInput={(event: JSX.TargetedEvent<HTMLInputElement, Event>): void =>
+                    onInput={(event: TargetedInputEvent<HTMLInputElement>): void =>
                       setColor(mode, key, event.currentTarget.value)
                     }
                   />

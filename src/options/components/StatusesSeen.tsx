@@ -1,4 +1,4 @@
-import type { JSX } from "preact";
+import type { VNode } from "preact";
 import type { StatusCount } from "../../lib/types.ts";
 
 type StatusesSeenProps = {
@@ -6,7 +6,7 @@ type StatusesSeenProps = {
 };
 
 /** What this portal actually sends, so the keyword lists can be matched to it. */
-export function StatusesSeen({ statuses }: StatusesSeenProps): JSX.Element {
+export function StatusesSeen({ statuses }: StatusesSeenProps): VNode {
   const text: string =
     statuses.length > 0
       ? statuses

@@ -24,6 +24,13 @@ if [[ -f test/contract.sh ]]; then
   bash test/contract.sh | tail -3
 fi
 
+echo "\n--- deprecated preact types ---"
+if grep -rn "JSX\.Targeted\|JSX\.Element" src/ 2>/dev/null; then
+  echo "  use the preact root exports (VNode, TargetedInputEvent) - the JSX namespace copies are deprecated"
+  exit 1
+fi
+echo "  none"
+
 echo "\n--- explicit types ---"
 "$node_bin" test/annotations.mjs
 

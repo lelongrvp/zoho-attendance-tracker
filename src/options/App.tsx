@@ -1,4 +1,4 @@
-import type { JSX } from "preact";
+import type { VNode } from "preact";
 import { useEffect, useState } from "preact/hooks";
 import type {
   ArchivedMonth,
@@ -39,7 +39,7 @@ const TARGET_OPTIONS: { value: string; label: string }[] = [
   { value: "worked", label: "Hours actually worked" },
 ];
 
-export function App(): JSX.Element {
+export function App(): VNode {
   const [form, setForm] = useState<FormState | null>(null);
   const [statuses, setStatuses] = useState<StatusCount[]>([]);
   const [status, setStatus] = useState<Status | null>(null);

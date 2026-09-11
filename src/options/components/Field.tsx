@@ -15,10 +15,12 @@ type FieldProps = {
 /** One label/hint/control row. */
 export function Field({ label, hint, htmlFor, children }: FieldProps): VNode {
   return (
-    <div class="flex items-center justify-between gap-4 border-b border-rule py-[9px]">
+    <div class="flex items-center justify-between gap-4 border-b border-rule py-2.25">
       <label class="text-ink-2" for={htmlFor}>
         {label}
-        {hint ? <span class="block text-[11px] text-ink-faint">{hint}</span> : null}
+        {hint ? (
+          <span class="block text-[11px] text-ink-faint">{hint}</span>
+        ) : null}
       </label>
       {children}
     </div>
@@ -33,7 +35,7 @@ type FieldsetProps = {
 /** A titled group of rows. */
 export function Fieldset({ legend, children }: FieldsetProps): VNode {
   return (
-    <fieldset class="mt-[26px] border-none">
+    <fieldset class="mt-6.5 border-none">
       <legend class="w-full border-b border-rule-strong pb-2 text-[10px] font-semibold tracking-[0.09em] text-ink-3 uppercase">
         {legend}
       </legend>
@@ -43,7 +45,7 @@ export function Fieldset({ legend, children }: FieldsetProps): VNode {
 }
 
 const CONTROL: string =
-  "rounded-[3px] border border-rule-strong bg-panel px-2 py-[5px] text-right font-num text-[13px] tabular-nums text-ink focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ink";
+  "rounded-panel border border-rule-strong bg-panel px-2 py-1.25 text-right font-num text-[13px] tabular-nums text-ink focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ink";
 
 type NumberInputProps = {
   id: string;
@@ -54,12 +56,19 @@ type NumberInputProps = {
   onValue: (value: string) => void;
 };
 
-export function NumberInput({ id, value, step, min, max, onValue }: NumberInputProps): VNode {
+export function NumberInput({
+  id,
+  value,
+  step,
+  min,
+  max,
+  onValue,
+}: NumberInputProps): VNode {
   return (
     <input
       id={id}
       type="number"
-      class={`${CONTROL} w-[110px]`}
+      class={`${CONTROL} w-27.5`}
       value={value}
       step={step}
       min={min}
@@ -82,7 +91,7 @@ export function TimeInput({ id, value, onValue }: TimeInputProps): VNode {
     <input
       id={id}
       type="time"
-      class={`${CONTROL} w-[130px]`}
+      class={`${CONTROL} w-32.5`}
       value={value}
       onInput={(event: TargetedInputEvent<HTMLInputElement>): void =>
         onValue(event.currentTarget.value)
@@ -103,7 +112,7 @@ export function TextInput({ id, value, onValue }: TextInputProps): VNode {
       id={id}
       type="text"
       spellcheck={false}
-      class={`${CONTROL} w-[240px] text-left`}
+      class={`${CONTROL} w-60 text-left`}
       value={value}
       onInput={(event: TargetedInputEvent<HTMLInputElement>): void =>
         onValue(event.currentTarget.value)
@@ -129,13 +138,11 @@ export function Select({ id, value, options, onValue }: SelectProps): VNode {
         onValue(event.currentTarget.value)
       }
     >
-      {options.map(
-        (option: { value: string; label: string }): VNode => (
-          <option key={option.value} value={option.value}>
-            {option.label}
-          </option>
-        ),
-      )}
+      {options.map((option: { value: string; label: string }): VNode => (
+        <option key={option.value} value={option.value}>
+          {option.label}
+        </option>
+      ))}
     </select>
   );
 }

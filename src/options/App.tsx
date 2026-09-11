@@ -16,9 +16,22 @@ import {
 } from "../lib/policy.ts";
 import { applyTokens, listSchemes, resolveTokens } from "../lib/themes.ts";
 import { read, remove, write } from "../lib/storage.ts";
-import type { FormResult, FormState, HourField, PlainField, TimeField } from "./form.ts";
+import type {
+  FormResult,
+  FormState,
+  HourField,
+  PlainField,
+  TimeField,
+} from "./form.ts";
 import { formToPolicy, pageMode, policyToForm } from "./form.ts";
-import { Field, Fieldset, NumberInput, Select, TextInput, TimeInput } from "./components/Field.tsx";
+import {
+  Field,
+  Fieldset,
+  NumberInput,
+  Select,
+  TextInput,
+  TimeInput,
+} from "./components/Field.tsx";
 import { CustomScheme } from "./components/CustomScheme.tsx";
 import { StatusesSeen } from "./components/StatusesSeen.tsx";
 
@@ -26,7 +39,10 @@ type Status = { text: string; isError: boolean };
 
 const SCHEME_OPTIONS: { value: string; label: string }[] = [
   ...listSchemes().map(
-    (scheme: { id: string; name: string }): { value: string; label: string } => ({
+    (scheme: {
+      id: string;
+      name: string;
+    }): { value: string; label: string } => ({
       value: scheme.id,
       label: scheme.name,
     }),
@@ -98,7 +114,9 @@ export function App(): VNode {
 
   function setTime(key: TimeField, value: string): void {
     setForm((current: FormState | null): FormState | null =>
-      current ? { ...current, times: { ...current.times, [key]: value } } : current,
+      current
+        ? { ...current, times: { ...current.times, [key]: value } }
+        : current,
     );
   }
 
@@ -146,15 +164,15 @@ export function App(): VNode {
   }
 
   if (!form) {
-    return <main class="mx-auto max-w-[560px]" />;
+    return <main class="mx-auto max-w-140" />;
   }
 
   return (
-    <main class="mx-auto max-w-[560px]">
+    <main class="mx-auto max-w-140">
       <h1 class="border-b border-ink pb-3 text-[18px] font-semibold tracking-[-0.01em]">
         Attendance Tracker settings
       </h1>
-      <p class="mt-[10px] text-[12.5px] text-ink-3">
+      <p class="mt-2.5 text-[12.5px] text-ink-3">
         Everything here also works as a console override — these fields read and
         write the same <code class="font-num">policy</code> and{" "}
         <code class="font-num">portalId</code> keys in extension storage. Blank
@@ -175,7 +193,10 @@ export function App(): VNode {
           />
         </Field>
         {form.scheme === "custom" ? (
-          <CustomScheme scheme={form.customScheme} onChange={changeCustomScheme} />
+          <CustomScheme
+            scheme={form.customScheme}
+            onChange={changeCustomScheme}
+          />
         ) : null}
       </Fieldset>
 
@@ -202,7 +223,9 @@ export function App(): VNode {
           <TextInput
             id="holiday-statuses"
             value={form.holidayStatuses}
-            onValue={(holidayStatuses: string): void => update({ holidayStatuses })}
+            onValue={(holidayStatuses: string): void =>
+              update({ holidayStatuses })
+            }
           />
         </Field>
         <Field
@@ -213,7 +236,9 @@ export function App(): VNode {
           <TextInput
             id="weekend-statuses"
             value={form.weekendStatuses}
-            onValue={(weekendStatuses: string): void => update({ weekendStatuses })}
+            onValue={(weekendStatuses: string): void =>
+              update({ weekendStatuses })
+            }
           />
         </Field>
         <Field
@@ -225,24 +250,36 @@ export function App(): VNode {
       </Fieldset>
 
       <Fieldset legend="Day targets">
-        <Field label="Part-time target, normal start" hint="hours after check-in" htmlFor="earlyPartTimeHours">
+        <Field
+          label="Part-time target, normal start"
+          hint="hours after check-in"
+          htmlFor="earlyPartTimeHours"
+        >
           <NumberInput
             id="earlyPartTimeHours"
             value={form.numbers.earlyPartTimeHours}
             step="0.25"
             min="1"
             max="16"
-            onValue={(value: string): void => setNumber("earlyPartTimeHours", value)}
+            onValue={(value: string): void =>
+              setNumber("earlyPartTimeHours", value)
+            }
           />
         </Field>
-        <Field label="Full-time target, normal start" hint="hours after check-in" htmlFor="earlyFullTimeHours">
+        <Field
+          label="Full-time target, normal start"
+          hint="hours after check-in"
+          htmlFor="earlyFullTimeHours"
+        >
           <NumberInput
             id="earlyFullTimeHours"
             value={form.numbers.earlyFullTimeHours}
             step="0.25"
             min="1"
             max="16"
-            onValue={(value: string): void => setNumber("earlyFullTimeHours", value)}
+            onValue={(value: string): void =>
+              setNumber("earlyFullTimeHours", value)
+            }
           />
         </Field>
         <Field label="Part-time target, late start" htmlFor="latePartTimeHours">
@@ -252,7 +289,9 @@ export function App(): VNode {
             step="0.25"
             min="1"
             max="16"
-            onValue={(value: string): void => setNumber("latePartTimeHours", value)}
+            onValue={(value: string): void =>
+              setNumber("latePartTimeHours", value)
+            }
           />
         </Field>
         <Field label="Full-time target, late start" htmlFor="lateFullTimeHours">
@@ -262,7 +301,9 @@ export function App(): VNode {
             step="0.25"
             min="1"
             max="16"
-            onValue={(value: string): void => setNumber("lateFullTimeHours", value)}
+            onValue={(value: string): void =>
+              setNumber("lateFullTimeHours", value)
+            }
           />
         </Field>
         <Field
@@ -287,7 +328,9 @@ export function App(): VNode {
           <TimeInput
             id="lateStartAfterMinutes"
             value={form.times.lateStartAfterMinutes}
-            onValue={(value: string): void => setTime("lateStartAfterMinutes", value)}
+            onValue={(value: string): void =>
+              setTime("lateStartAfterMinutes", value)
+            }
           />
         </Field>
         <Field
@@ -298,7 +341,9 @@ export function App(): VNode {
           <TimeInput
             id="lateThresholdMinutes"
             value={form.times.lateThresholdMinutes}
-            onValue={(value: string): void => setTime("lateThresholdMinutes", value)}
+            onValue={(value: string): void =>
+              setTime("lateThresholdMinutes", value)
+            }
           />
         </Field>
       </Fieldset>
@@ -321,17 +366,25 @@ export function App(): VNode {
             step="0.25"
             min="1"
             max="16"
-            onValue={(value: string): void => setNumber("fullDaySeconds", value)}
+            onValue={(value: string): void =>
+              setNumber("fullDaySeconds", value)
+            }
           />
         </Field>
-        <Field label="Short-day floor" hint="hours worked" htmlFor="shortDaySeconds">
+        <Field
+          label="Short-day floor"
+          hint="hours worked"
+          htmlFor="shortDaySeconds"
+        >
           <NumberInput
             id="shortDaySeconds"
             value={form.numbers.shortDaySeconds}
             step="0.25"
             min="1"
             max="16"
-            onValue={(value: string): void => setNumber("shortDaySeconds", value)}
+            onValue={(value: string): void =>
+              setNumber("shortDaySeconds", value)
+            }
           />
         </Field>
         <Field label="Short days allowed per cycle" htmlFor="shortDayQuota">
@@ -361,26 +414,34 @@ export function App(): VNode {
             step="1"
             min="0"
             max="31"
-            onValue={(value: string): void => setNumber("violationQuota", value)}
+            onValue={(value: string): void =>
+              setNumber("violationQuota", value)
+            }
           />
         </Field>
-        <Field label="Data counts as stale after" hint="minutes" htmlFor="staleAfterMinutes">
+        <Field
+          label="Data counts as stale after"
+          hint="minutes"
+          htmlFor="staleAfterMinutes"
+        >
           <NumberInput
             id="staleAfterMinutes"
             value={form.numbers.staleAfterMinutes}
             step="5"
             min="5"
             max="720"
-            onValue={(value: string): void => setNumber("staleAfterMinutes", value)}
+            onValue={(value: string): void =>
+              setNumber("staleAfterMinutes", value)
+            }
           />
         </Field>
       </Fieldset>
 
-      <div class="mt-7 flex items-center gap-[10px]">
+      <div class="mt-7 flex items-center gap-2.5">
         <button
           id="save"
           type="button"
-          class="cursor-pointer rounded-[3px] border border-ink bg-ink px-[18px] py-2 text-[12.5px] font-semibold text-paper focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+          class="cursor-pointer rounded-panel border border-ink bg-ink px-4.5 py-2 text-[12.5px] font-semibold text-paper focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
           onClick={(): void => void save()}
         >
           Save
@@ -388,7 +449,7 @@ export function App(): VNode {
         <button
           id="reset"
           type="button"
-          class="cursor-pointer rounded-[3px] border border-rule-strong bg-transparent px-[18px] py-2 text-[12.5px] font-semibold text-ink-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+          class="cursor-pointer rounded-panel border border-rule-strong bg-transparent px-4.5 py-2 text-[12.5px] font-semibold text-ink-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
           onClick={(): void => void reset()}
         >
           Reset to defaults

@@ -232,16 +232,44 @@ they have to exist before it starts, not after.
   design rests on — measure it rather than assuming it.
 - **The worker suites must pass unchanged.** They are what proves the
   behaviour survived; rewriting them alongside the UI would prove nothing.
-- **The DOM-contract check needs a component-shaped replacement**, or the
-  rewrite loses the guarantee that the popup and its markup agree.
+- **The DOM-contract check gets deleted rather than replaced.** It exists
+  because `popup.js` and `popup.html` can disagree about an id; after the
+  conversion they are one file, and TypeScript catches what it caught.
 - **Both themes, both languages, ten colorschemes and the custom scheme keep
   working**, driven by the same tokens and string tables as now.
 
-**Still to decide: which framework.** React with a build step is the
-conventional answer and is fine here. Preact is the same programming model at
-a fraction of the bundle, which matters for a surface whose entire budget is
-one frame. Decide it on a first-paint measurement of a spike, not on
-familiarity.
+**Decided 2026-09-10: Preact, TypeScript, plain Vite, Tailwind v4.**
+
+- **Preact** over React: ~4.5KB gzip against ~45KB on a surface that parses
+  its bundle on every open. Same JSX, same hooks; nothing on the roadmap needs
+  a React-only library. The cost is a small dialect shift — `preact/hooks`
+  imports, and `onInput` where React would use `onChange`.
+- **TypeScript**, because the build step exists either way. It earns its place
+  on the payload specifically: `approvalInfo: unknown` turns the README's
+  unverified assumption into something the compiler enforces at every use
+  site.
+- **Plain Vite**, three entries, static manifest in `public/`. No extension
+  plugin in the dependency path. The dev loop is `vite build --watch` plus the
+  reload button, because the dev server's inline scripts violate MV3's CSP.
+- **Tailwind v4** replaces the hand-written CSS, chosen knowingly against the
+  alternative of keeping it. `@theme` declares the tokens and `themes.js`
+  keeps overriding them at runtime, so the ten colorschemes need no Tailwind
+  involvement and no `dark:` variant is ever written — mode is an input to the
+  resolver, not a CSS state. The risk is real and named: 1,032 lines of
+  measured CSS are being rewritten, and the calendar alignment invariant has
+  to be re-proved by the render harness, not assumed.
+
+Runtime dependencies: `preact`, `@preact/signals`, `clsx`. That is the
+complete list. Storage is the store — no state library. The date handling
+stays hand-rolled; a date library would re-open the timezone bugs `policy.js`
+exists to have fixed.
+
+**Phases**, each ending green and committed before the next starts: tests into
+the repo (0), toolchain with the old code still in place (1), `lib/` to
+TypeScript (2), options page (3), popup (4), worker to TypeScript without a
+framework (5), cleanup and packaging (6). Converting the build before
+converting the code separates "does Vite produce a loadable MV3 extension"
+from "does the rewrite behave the same".
 
 **Done when** every behaviour in the release notes below still holds, the
 suite passes unchanged, and `scripts/package.sh` ships a bundle that loads

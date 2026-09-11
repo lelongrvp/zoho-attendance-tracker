@@ -10,7 +10,9 @@ export function StatusesSeen({ statuses }: StatusesSeenProps): VNode {
   const text: string =
     statuses.length > 0
       ? statuses
-          .map((entry: StatusCount): string => `${entry.status} (${entry.count})`)
+          .map(
+            (entry: StatusCount): string => `${entry.status} (${entry.count})`,
+          )
           .join(", ")
       : "nothing cached yet - open the popup once";
 

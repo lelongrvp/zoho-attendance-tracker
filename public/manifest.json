@@ -3,15 +3,8 @@
   "name": "Attendance Tracker for Zoho People",
   "version": "1.8.2.1",
   "description": "Today's checkout targets, live countdowns, and monthly quota usage from Zoho People, with leave-on-time reminders.",
-  "permissions": [
-    "storage",
-    "alarms",
-    "cookies",
-    "notifications"
-  ],
-  "host_permissions": [
-    "https://people.zoho.com/*"
-  ],
+  "permissions": ["storage", "alarms", "cookies", "notifications"],
+  "host_permissions": ["https://people.zoho.com/*"],
   "background": {
     "service_worker": "background.js",
     "type": "module"

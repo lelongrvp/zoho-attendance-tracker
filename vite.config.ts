@@ -21,7 +21,9 @@ export default defineConfig({
       output: {
         // background.js is named literally by the manifest, so it must not be hashed.
         entryFileNames: (chunk) =>
-          chunk.name === "background" ? "background.js" : "assets/[name]-[hash].js",
+          chunk.name === "background"
+            ? "background.js"
+            : "assets/[name]-[hash].js",
         chunkFileNames: "assets/[name]-[hash].js",
         assetFileNames: "assets/[name]-[hash][extname]",
       },

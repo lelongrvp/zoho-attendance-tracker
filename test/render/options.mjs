@@ -10,7 +10,13 @@ const here = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(here, "../..");
 const distRoot = resolve(repoRoot, "dist");
 const CHROME = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
-const MIME = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".png": "image/png", ".json": "application/json" };
+const MIME = {
+  ".html": "text/html",
+  ".js": "text/javascript",
+  ".css": "text/css",
+  ".png": "image/png",
+  ".json": "application/json",
+};
 
 const work = await mkdtemp(join(tmpdir(), "attendance-options-"));
 let failed = false;
@@ -40,7 +46,10 @@ try {
   const moduleTag = page.match(/<script type="module"[^>]*><\/script>/);
   await writeFile(
     join(work, "options/probe.html"),
-    page.replace(moduleTag[0], `<script src="/options-stub.js"></script>\n${moduleTag[0]}`),
+    page.replace(
+      moduleTag[0],
+      `<script src="/options-stub.js"></script>\n${moduleTag[0]}`,
+    ),
     "utf8",
   );
 
@@ -104,7 +113,11 @@ try {
 
     document.title = JSON.stringify(result);
   `;
-  await writeFile(join(work, "driver.js"), `(async () => {${driver}})();`, "utf8");
+  await writeFile(
+    join(work, "driver.js"),
+    `(async () => {${driver}})();`,
+    "utf8",
+  );
   await writeFile(
     join(work, "options/probe.html"),
     (await readFile(join(work, "options/probe.html"), "utf8")).replace(
@@ -116,8 +129,13 @@ try {
 
   const server = createServer(async (request, response) => {
     try {
-      const body = await readFile(join(work, new URL(request.url, "http://x").pathname));
-      response.writeHead(200, { "Content-Type": MIME[extname(request.url.split("?")[0])] ?? "text/plain" });
+      const body = await readFile(
+        join(work, new URL(request.url, "http://x").pathname),
+      );
+      response.writeHead(200, {
+        "Content-Type":
+          MIME[extname(request.url.split("?")[0])] ?? "text/plain",
+      });
       response.end(body);
     } catch {
       response.writeHead(404).end("nope");
@@ -127,9 +145,18 @@ try {
   const { port } = server.address();
 
   const dom = await new Promise((resolveDom, reject) => {
-    const chrome = spawn(CHROME, ["--headless", "--disable-gpu", "--no-sandbox", "--virtual-time-budget=6000", "--dump-dom", `http://localhost:${port}/options/probe.html`]);
+    const chrome = spawn(CHROME, [
+      "--headless",
+      "--disable-gpu",
+      "--no-sandbox",
+      "--virtual-time-budget=6000",
+      "--dump-dom",
+      `http://localhost:${port}/options/probe.html`,
+    ]);
     let text = "";
-    chrome.stdout.on("data", (chunk) => { text += chunk; });
+    chrome.stdout.on("data", (chunk) => {
+      text += chunk;
+    });
     chrome.on("error", reject);
     chrome.on("close", () => resolveDom(text));
   });
@@ -137,7 +164,11 @@ try {
 
   const match = dom.match(/<title>([\s\S]*?)<\/title>/);
   const result = JSON.parse(
-    match[1].replaceAll("&quot;", '"').replaceAll("&amp;", "&").replaceAll("&lt;", "<").replaceAll("&gt;", ">"),
+    match[1]
+      .replaceAll("&quot;", '"')
+      .replaceAll("&amp;", "&")
+      .replaceAll("&lt;", "<")
+      .replaceAll("&gt;", ">"),
   );
 
   const checks = [
@@ -146,12 +177,22 @@ try {
     ["hours converted to seconds", result.policy.fullDaySeconds === 27000],
     ["time converted to minutes", result.policy.lateStartAfterMinutes === 750],
     ["select saved", result.policy.targetMode === "worked"],
-    ["keywords split", Array.isArray(result.policy.holidayStatuses) && result.policy.holidayStatuses.join("|") === "le|tet"],
+    [
+      "keywords split",
+      Array.isArray(result.policy.holidayStatuses) &&
+        result.policy.holidayStatuses.join("|") === "le|tet",
+    ],
     ["portal id saved", result.portalId === "hrportal9999"],
     ["save confirmed", result.status === "Saved"],
-    ["validation still rejects", result.validationMessage === "Short-day floor must be below the full day"],
+    [
+      "validation still rejects",
+      result.validationMessage === "Short-day floor must be below the full day",
+    ],
     ["custom scheme revealed", result.customVisible === true],
-    ["preview follows onInput, not onChange", result.previewFollowsInput === true],
+    [
+      "preview follows onInput, not onChange",
+      result.previewFollowsInput === true,
+    ],
   ];
 
   for (const [name, passed] of checks) {

@@ -105,8 +105,7 @@ export function policyToForm(
 }
 
 export type FormResult =
-  | { ok: true; policy: Policy }
-  | { ok: false; message: string };
+  { ok: true; policy: Policy } | { ok: false; message: string };
 
 /** Same rules and messages the vanilla page used; nothing here is new. */
 export function formToPolicy(form: FormState): FormResult {

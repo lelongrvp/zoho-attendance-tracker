@@ -22,7 +22,11 @@ async function walk(dir) {
 function statementFrom(lines, start) {
   let depth = 0;
   const collected = [];
-  for (let index = start; index < lines.length && index < start + 600; index++) {
+  for (
+    let index = start;
+    index < lines.length && index < start + 600;
+    index++
+  ) {
     const line = lines[index] ?? "";
     collected.push(line);
     for (const character of line) {
@@ -84,14 +88,18 @@ for (const root of ROOTS) {
         const statement = statementFrom(lines, index);
         const expression = statement.slice(statement.indexOf("=") + 1).trim();
         if (!SELF_TYPED.some((pattern) => pattern.test(expression))) {
-          console.log(`  ${file}:${index + 1}  ${declaration[1]} has no written type`);
+          console.log(
+            `  ${file}:${index + 1}  ${declaration[1]} has no written type`,
+          );
           failures++;
         }
       }
 
       const declared = FUNCTION_DECL.exec(line);
       if (declared && !/\)\s*:\s*\S/.test(signatureFrom(lines, index))) {
-        console.log(`  ${file}:${index + 1}  ${declared[1]}() has no return type`);
+        console.log(
+          `  ${file}:${index + 1}  ${declared[1]}() has no return type`,
+        );
         failures++;
       }
     });

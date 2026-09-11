@@ -1,0 +1,39 @@
+name: CI
+
+on:
+  pull_request:
+    # main is still the pre-conversion loose-file tree (no package.json, no
+    # test/) until 1.9.0 lands - nothing here would run against it yet.
+    branches: [develop]
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  build-test-lint:
+    name: build-test-lint
+    # ubuntu runners have no Chrome at the fixed path test/render/*.mjs spawns -
+    # macos-latest ships Chrome there already, and public-repo minutes are free.
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: format check
+        run: pnpm exec prettier --check .
+
+      - name: contract (typecheck, build, worker + render suites)
+        run: pnpm test
+
+      # test:unit (vitest) isn't wired in yet - no *.test.* files exist in the
+      # repo, so it exits 1 on "no test files found" rather than passing.
+      # Re-add this step once a real vitest suite lands.

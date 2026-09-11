@@ -69,7 +69,7 @@ header overrides that, and the choice is remembered in `chrome.storage.local`.
 ## Install
 
 Non-developers: see **INSTALL.md** (English + Tiếng Việt). The intended
-distribution channel is the Chrome Web Store as an *unlisted* extension —
+distribution channel is the Chrome Web Store as an _unlisted_ extension —
 one-click install and automatic updates; `store/listing.md` is the complete
 submission kit and `scripts/package.sh` builds the store-ready zip from the
 committed tree.
@@ -207,7 +207,7 @@ because the release comes after it.
 
 **In scope.** The popup and the options page. That is the whole feature list;
 no behaviour changes, no new tabs, no visual redesign. A version of this
-README's *What it shows* section that is still true afterwards is the goal.
+README's _What it shows_ section that is still true afterwards is the goal.
 
 **Explicitly not in scope.** The service worker — MV3's worker is an event
 handler with no DOM, and a framework buys it nothing. `policy.js`, `themes.js`
@@ -301,7 +301,7 @@ likely to matter. None of them are started until the conversion is done.
   freshness stamp wrapping, keyboard stepping for the calendar.
 - **Release engineering** — a packaging guard that checks the zip against
   what `manifest.json` and the HTML reference, a version-consistency check
-  (anchored under *Release notes*, since the roadmap also uses version
+  (anchored under _Release notes_, since the roadmap also uses version
   headings), and a written clean-profile smoke test.
 
 **Gated on a DevTools capture.** Each becomes a new popup tab once one request
@@ -346,8 +346,8 @@ and UI shipped in 1.4.0; only the default is conservative.
   window. A four-part version because this confirms 1.8.2 and adds no
   behaviour — 1.8.3 is spoken for by the roadmap.
 - `preMonth` verified as a true month offset rather than the two-state flag
-  its only two original call sites made it look like; see *Unverified
-  assumptions*.
+  its only two original call sites made it look like; see _Unverified
+  assumptions_.
 
 ### 1.8.2 — 2026-09-10
 

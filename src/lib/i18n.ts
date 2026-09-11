@@ -1,6 +1,9 @@
 import type { Lang } from "./types.ts";
 
-export type Translator = (key: string, params?: Record<string, string | number>) => string;
+export type Translator = (
+  key: string,
+  params?: Record<string, string | number>,
+) => string;
 
 // Popup and notification strings. English is the fallback for any key a
 // language table is missing.
@@ -206,7 +209,10 @@ export function normalizeLanguage(value: unknown): Lang {
 
 export function makeTranslator(lang: Lang): Translator {
   const table: Record<string, string> = STRINGS[normalizeLanguage(lang)];
-  return (key: string, params: Record<string, string | number> = {}): string => {
+  return (
+    key: string,
+    params: Record<string, string | number> = {},
+  ): string => {
     let text: string = table[key] ?? STRINGS.en[key] ?? key;
     for (const [name, value] of Object.entries(params)) {
       text = text.replace(`{${name}}`, String(value));
@@ -228,14 +234,18 @@ export function applyStaticTranslations(
   root: ParentNode,
   translate: Translator,
 ): void {
-  root.querySelectorAll<HTMLElement>("[data-i18n]").forEach((element: HTMLElement): void => {
-    element.textContent = translate(element.dataset["i18n"] ?? "");
-  });
-  root.querySelectorAll<HTMLElement>("[data-i18n-title]").forEach((element: HTMLElement): void => {
-    const text: string = translate(element.dataset["i18nTitle"] ?? "");
-    element.title = text;
-    if (element.hasAttribute("aria-label")) {
-      element.setAttribute("aria-label", text);
-    }
-  });
+  root
+    .querySelectorAll<HTMLElement>("[data-i18n]")
+    .forEach((element: HTMLElement): void => {
+      element.textContent = translate(element.dataset["i18n"] ?? "");
+    });
+  root
+    .querySelectorAll<HTMLElement>("[data-i18n-title]")
+    .forEach((element: HTMLElement): void => {
+      const text: string = translate(element.dataset["i18nTitle"] ?? "");
+      element.title = text;
+      if (element.hasAttribute("aria-label")) {
+        element.setAttribute("aria-label", text);
+      }
+    });
 }

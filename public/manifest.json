@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Attendance Tracker for Zoho People",
-  "version": "1.8.2.1",
+  "version": "1.9.0",
   "description": "Today's checkout targets, live countdowns, and monthly quota usage from Zoho People, with leave-on-time reminders.",
   "permissions": ["storage", "alarms", "cookies", "notifications"],
   "host_permissions": ["https://people.zoho.com/*"],

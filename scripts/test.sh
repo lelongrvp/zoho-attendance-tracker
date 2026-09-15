@@ -23,6 +23,9 @@ for suite in test/worker/test*.mjs; do
   "$node_bin" "$suite" | tail -1
 done
 
+echo "\n--- component and pure-logic units ---"
+pnpm -s test:unit 2>&1 | grep -E "Test Files|Tests " | sed 's/^/  /'
+
 echo "\n--- deprecated preact types ---"
 if grep -rn "JSX\.Targeted\|JSX\.Element" src/ 2>/dev/null; then
   echo "  use the preact root exports (VNode, TargetedInputEvent) - the JSX namespace copies are deprecated"

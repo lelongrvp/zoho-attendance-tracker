@@ -61,10 +61,25 @@ jobs:
             of them unresolved - they are for a human to act on and close.
 
             Whatever the outcome, you MUST finish by posting exactly one
-            top-level summary comment with `gh pr comment`. Silence is not an
-            acceptable result: a run that says nothing is indistinguishable from
-            a run that never happened, which is how this workflow sat broken for
-            four days. The comment contains, in this order:
+            review. Silence is not an acceptable result: a run that says nothing
+            is indistinguishable from a run that never happened, which is how
+            this workflow sat broken for four days.
+
+            On PASS, submit it as an approving review:
+            `gh pr review <n> --approve --body "..."`. That puts the green check
+            on the PR, which is the signal a clean run should leave.
+
+            If that call fails, the repository has "Allow GitHub Actions to
+            create and approve pull requests" switched off. Do not treat that as
+            a failed run - fall back to `gh pr comment <n> --body "..."` with the
+            identical body, and add one closing line saying the approval was
+            refused by that setting. The verdict still has to reach the PR.
+
+            On CHANGES REQUESTED, use `gh pr review <n> --comment --body "..."`.
+            Never `--request-changes`: branch protection decides what blocks a
+            merge here, not this workflow.
+
+            The body contains, in this order:
 
             1. A verdict line: `**PASS**` or `**CHANGES REQUESTED**`.
             2. The invariant checklist, one row per invariant from
@@ -76,6 +91,8 @@ jobs:
             4. On CHANGES REQUESTED only: the findings, each one linking the
                inline comment you left for it.
 
+            Post the body once, through one of those commands - never both.
+
             If the verdict is PASS, also resolve every unresolved review thread
             you opened on earlier runs of this PR, so a branch that has been
             fixed stops showing stale objections. Resolve only threads authored
@@ -84,6 +101,6 @@ jobs:
             anything when the verdict is CHANGES REQUESTED.
           # Sonnet + medium: this repo sees a handful of PRs, and they touch
           # shared logic - Haiku/low had nothing useful to say about a 63-file diff.
-          claude_args: '--model claude-sonnet-5 --allowedTools "mcp__github_inline_comment__create_inline_comment,Bash(gh pr comment:*),Bash(gh pr view:*),Bash(gh api:*)"'
+          claude_args: '--model claude-sonnet-5 --allowedTools "mcp__github_inline_comment__create_inline_comment,Bash(gh pr comment:*),Bash(gh pr review:*),Bash(gh pr view:*),Bash(gh api:*)"'
           # See https://github.com/anthropics/claude-code-action/blob/main/docs/usage.md
           # or https://code.claude.com/docs/en/cli-reference for available options

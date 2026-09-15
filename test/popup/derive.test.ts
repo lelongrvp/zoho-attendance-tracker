@@ -364,3 +364,46 @@ describe("deriveCycleUsage with a part-leave day", () => {
     expect(usage.workedDays).toBe(6);
   });
 });
+
+describe("part-leave days across the hours range", () => {
+  const usageFor = (tsecs: number, leaveDaysTaken: number): CycleUsageDerived =>
+    deriveCycleUsage(
+      { 0: { orgdate: "2026-09-15", tsecs, leaveDaysTaken } },
+      new Date(2026, 8, 16, 12, 0, 0),
+      DEFAULT_POLICY,
+      "en",
+    );
+
+  it("quarter-day leave plus exactly 6h is a full day, owing nothing", () => {
+    const usage: CycleUsageDerived = usageFor(6 * 3600, 0.25);
+    expect(usage.days6To8Hours).toHaveLength(0);
+    expect(usage.daysBelow6Hours).toHaveLength(0);
+    expect(usage.balanceSeconds).toBe(0);
+  });
+
+  it("half-day leave plus 6h is a full day, two hours to the good", () => {
+    const usage: CycleUsageDerived = usageFor(6 * 3600, 0.5);
+    expect(usage.days6To8Hours).toHaveLength(0);
+    expect(usage.balanceSeconds).toBe(2 * 3600);
+  });
+
+  it("half-day leave plus 3h is short of the 4h owed", () => {
+    const usage: CycleUsageDerived = usageFor(3 * 3600, 0.5);
+    expect(usage.days6To8Hours).toHaveLength(1);
+    expect(usage.daysBelow6Hours).toHaveLength(0);
+    expect(usage.balanceSeconds).toBe(-3600);
+  });
+
+  it("quarter-day leave plus 4h misses even the pro-rated short bar", () => {
+    const usage: CycleUsageDerived = usageFor(4 * 3600, 0.25);
+    expect(usage.daysBelow6Hours).toHaveLength(1);
+    expect(usage.days6To8Hours).toHaveLength(0);
+  });
+
+  it("working on a whole leave day owes nothing and hits no quota", () => {
+    const usage: CycleUsageDerived = usageFor(2 * 3600, 1);
+    expect(usage.days6To8Hours).toHaveLength(0);
+    expect(usage.daysBelow6Hours).toHaveLength(0);
+    expect(usage.balanceSeconds).toBe(2 * 3600);
+  });
+});

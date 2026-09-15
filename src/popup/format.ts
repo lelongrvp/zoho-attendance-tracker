@@ -1,7 +1,7 @@
-import type { Lang } from "../lib/types.ts";
-import type { Translator } from "../lib/i18n.ts";
-import { monthNames, weekdayNames } from "../lib/i18n.ts";
-import { pad } from "../lib/policy.ts";
+import type { Lang } from "@/lib/types.ts";
+import type { Translator } from "@/lib/i18n.ts";
+import { monthNames, weekdayNames } from "@/lib/i18n.ts";
+import { pad } from "@/lib/policy.ts";
 
 export function formatTime(date: Date): string {
   return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });

@@ -1,5 +1,5 @@
 import type { VNode } from "preact";
-import type { Translator } from "../../lib/i18n.ts";
+import type { Translator } from "@/lib/i18n.ts";
 
 export type TabId = "attendance" | "calendar";
 
@@ -16,7 +16,7 @@ export type TabsProps = {
 
 export function Tabs({ activeTab, onSelect, translate }: TabsProps): VNode {
   return (
-    <nav class="mt-2 flex gap-[18px] border-b border-rule-strong">
+    <nav class="mt-2 flex gap-4.5 border-b border-rule-strong">
       <button
         type="button"
         class={`${TAB_BASE} ${activeTab === "attendance" ? TAB_ACTIVE : TAB_INACTIVE}`}

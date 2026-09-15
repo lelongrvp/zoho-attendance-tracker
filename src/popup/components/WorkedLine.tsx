@@ -1,8 +1,8 @@
 import type { VNode } from "preact";
-import type { Translator } from "../../lib/i18n.ts";
-import type { Policy, ZohoEntry } from "../../lib/types.ts";
-import type { WorkedLineState } from "../derive.ts";
-import { deriveWorkedLine } from "../derive.ts";
+import type { Translator } from "@/lib/i18n.ts";
+import type { Policy, ZohoEntry } from "@/lib/types.ts";
+import type { WorkedLineState } from "@/popup/derive.ts";
+import { deriveWorkedLine } from "@/popup/derive.ts";
 
 export type WorkedLineProps = {
   dayEntries: ZohoEntry[] | null;
@@ -29,7 +29,7 @@ export function WorkedLine({
 
   return (
     <div
-      class={`mt-2 min-h-[14px] font-num text-[10.5px] tabular-nums ${
+      class={`mt-2 min-h-3.5 font-num text-[10.5px] tabular-nums ${
         state?.diverges ? "text-stamp" : "text-ink-3"
       }`}
       title={state?.tooltip ?? ""}

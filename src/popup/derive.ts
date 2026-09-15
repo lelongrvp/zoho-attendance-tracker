@@ -10,9 +10,9 @@ import type {
   WorkedTargets,
   ZohoDay,
   ZohoEntry,
-} from "../lib/types.ts";
-import type { Translator } from "../lib/i18n.ts";
-import { monthNames } from "../lib/i18n.ts";
+} from "@/lib/types.ts";
+import type { Translator } from "@/lib/i18n.ts";
+import { monthNames } from "@/lib/i18n.ts";
 import {
   classifyNonWorkingDay,
   computeEffectiveTargets,
@@ -27,7 +27,7 @@ import {
   pad,
   parseZohoTimestamp,
   toLocalDateKey,
-} from "../lib/policy.ts";
+} from "@/lib/policy.ts";
 import {
   formatAgo,
   formatDayLabel,

@@ -1,10 +1,10 @@
 import { cleanup, render } from "@testing-library/preact";
 import { afterEach, describe, expect, it } from "vitest";
-import { TodayCard } from "../../src/popup/components/TodayCard.tsx";
-import { makeTranslator } from "../../src/lib/i18n.ts";
-import { DEFAULT_POLICY } from "../../src/lib/policy.ts";
-import type { Translator } from "../../src/lib/i18n.ts";
-import type { ActiveToday } from "../../src/popup/derive.ts";
+import { TodayCard } from "@/popup/components/TodayCard.tsx";
+import { makeTranslator } from "@/lib/i18n.ts";
+import { DEFAULT_POLICY } from "@/lib/policy.ts";
+import type { Translator } from "@/lib/i18n.ts";
+import type { ActiveToday } from "@/popup/derive.ts";
 
 afterEach((): void => {
   cleanup();

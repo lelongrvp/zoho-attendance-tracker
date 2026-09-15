@@ -1,8 +1,8 @@
 import { cleanup, render } from "@testing-library/preact";
 import { afterEach, describe, expect, it } from "vitest";
-import { AlertStrip } from "../../src/popup/components/AlertStrip.tsx";
-import { makeTranslator } from "../../src/lib/i18n.ts";
-import type { Translator } from "../../src/lib/i18n.ts";
+import { AlertStrip } from "@/popup/components/AlertStrip.tsx";
+import { makeTranslator } from "@/lib/i18n.ts";
+import type { Translator } from "@/lib/i18n.ts";
 
 afterEach((): void => {
   cleanup();

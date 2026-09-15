@@ -1,10 +1,10 @@
 import { cleanup, render } from "@testing-library/preact";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { Mock } from "vitest";
-import { Masthead } from "../../src/popup/components/Masthead.tsx";
-import { makeTranslator } from "../../src/lib/i18n.ts";
-import type { Translator } from "../../src/lib/i18n.ts";
-import type { MastheadProps } from "../../src/popup/components/Masthead.tsx";
+import { Masthead } from "@/popup/components/Masthead.tsx";
+import { makeTranslator } from "@/lib/i18n.ts";
+import type { Translator } from "@/lib/i18n.ts";
+import type { MastheadProps } from "@/popup/components/Masthead.tsx";
 
 afterEach((): void => {
   cleanup();

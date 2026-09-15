@@ -1,7 +1,7 @@
 import { cleanup, render } from "@testing-library/preact";
 import { afterEach, describe, expect, it } from "vitest";
-import { QuotaRow } from "../../src/popup/components/QuotaRow.tsx";
-import type { QuotaRecord } from "../../src/popup/derive.ts";
+import { QuotaRow } from "@/popup/components/QuotaRow.tsx";
+import type { QuotaRecord } from "@/popup/derive.ts";
 
 afterEach((): void => {
   cleanup();

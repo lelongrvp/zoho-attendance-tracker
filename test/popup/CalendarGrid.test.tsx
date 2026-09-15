@@ -1,9 +1,9 @@
 import { cleanup, render } from "@testing-library/preact";
 import { afterEach, describe, expect, it } from "vitest";
-import { CalendarGrid } from "../../src/popup/components/CalendarGrid.tsx";
-import { makeTranslator } from "../../src/lib/i18n.ts";
-import type { Translator } from "../../src/lib/i18n.ts";
-import type { CalendarCellState } from "../../src/popup/derive.ts";
+import { CalendarGrid } from "@/popup/components/CalendarGrid.tsx";
+import { makeTranslator } from "@/lib/i18n.ts";
+import type { Translator } from "@/lib/i18n.ts";
+import type { CalendarCellState } from "@/popup/derive.ts";
 
 afterEach((): void => {
   cleanup();

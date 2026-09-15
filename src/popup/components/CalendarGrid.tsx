@@ -1,6 +1,6 @@
 import type { VNode } from "preact";
-import type { Translator } from "../../lib/i18n.ts";
-import type { CalendarCellState } from "../derive.ts";
+import type { Translator } from "@/lib/i18n.ts";
+import type { CalendarCellState } from "@/popup/derive.ts";
 import { CalendarCell } from "./CalendarCell.tsx";
 
 const WEEKDAY_KEYS: string[] = [
@@ -26,7 +26,7 @@ export function CalendarGrid({
 }: CalendarGridProps): VNode {
   return (
     <>
-      <div class="mt-1.5 grid grid-cols-7 gap-[3px]">
+      <div class="mt-1.5 grid grid-cols-7 gap-0.75">
         {WEEKDAY_KEYS.map((key: string): VNode => (
           <span
             key={key}
@@ -36,12 +36,12 @@ export function CalendarGrid({
           </span>
         ))}
       </div>
-      <div class="mt-[5px] grid grid-cols-7 gap-[3px]">
+      <div class="mt-1.25 grid grid-cols-7 gap-0.75">
         {Array.from({ length: leadingSpacers }, (_, index: number): VNode => (
           <div
             key={`spacer-${index}`}
             data-cal-cell="spacer"
-            class="h-[34px] rounded-cell border-none bg-transparent"
+            class="h-8.5 rounded-cell border-none bg-transparent"
           />
         ))}
         {cells.map((cell: CalendarCellState): VNode => (

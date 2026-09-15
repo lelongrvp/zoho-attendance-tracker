@@ -1,3 +1,4 @@
+// Relative, not @/: the worker suites import this file directly under node, which ignores tsconfig paths.
 import {
   computeEffectiveTargets,
   findActiveCheckin,

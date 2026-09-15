@@ -7,12 +7,12 @@ import type {
   Policy,
   StorageKey,
   StorageShape,
-} from "../lib/types.ts";
-import type { Translator } from "../lib/i18n.ts";
-import { normalizeLanguage } from "../lib/i18n.ts";
-import { DEFAULT_POLICY, readPolicy } from "../lib/policy.ts";
-import type { StorageChanges, StorageChangeListener } from "../lib/storage.ts";
-import { onLocalChange, write } from "../lib/storage.ts";
+} from "@/lib/types.ts";
+import type { Translator } from "@/lib/i18n.ts";
+import { normalizeLanguage } from "@/lib/i18n.ts";
+import { DEFAULT_POLICY, readPolicy } from "@/lib/policy.ts";
+import type { StorageChanges, StorageChangeListener } from "@/lib/storage.ts";
+import { onLocalChange, write } from "@/lib/storage.ts";
 import type { ActiveToday, AlertState, Freshness } from "./derive.ts";
 import {
   deriveActiveToday,

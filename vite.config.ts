@@ -8,6 +8,9 @@ export default defineConfig({
   root: "src",
   publicDir: resolve(import.meta.dirname, "public"),
   plugins: [preact(), tailwindcss()],
+  resolve: {
+    alias: { "@": resolve(import.meta.dirname, "src") },
+  },
   build: {
     outDir: resolve(import.meta.dirname, "dist"),
     emptyOutDir: true,

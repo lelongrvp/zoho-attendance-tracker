@@ -1,6 +1,6 @@
 import type { VNode } from "preact";
-import type { Translator } from "../../lib/i18n.ts";
-import type { AlertState } from "../derive.ts";
+import type { Translator } from "@/lib/i18n.ts";
+import type { AlertState } from "@/popup/derive.ts";
 import { WarningIcon } from "./Icons.tsx";
 
 const LINK_CLASS: string =
@@ -37,9 +37,9 @@ export function AlertStrip({
     return null;
   }
   return (
-    <div class="mt-[11px] flex items-start gap-[9px] rounded-panel border-y border-r border-l-[3px] border-y-stamp-line border-r-stamp-line border-l-stamp bg-stamp-tint px-[11px] py-2.5">
-      <WarningIcon className="mt-px size-[15px] flex-none text-stamp" />
-      <span class="min-w-0 text-[12px] leading-[1.45] text-stamp-text [overflow-wrap:anywhere]">
+    <div class="mt-2.75 flex items-start gap-2.25 rounded-panel border-y border-r border-l-[3px] border-y-stamp-line border-r-stamp-line border-l-stamp bg-stamp-tint px-2.75 py-2.5">
+      <WarningIcon className="mt-px size-3.75 flex-none text-stamp" />
+      <span class="min-w-0 text-[12px] leading-[1.45] text-stamp-text wrap-anywhere">
         {state.kind === "login" ? (
           <LoginPrompt translate={translate} />
         ) : (

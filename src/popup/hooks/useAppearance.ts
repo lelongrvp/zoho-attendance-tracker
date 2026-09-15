@@ -1,7 +1,7 @@
 import { useEffect } from "preact/hooks";
-import type { Scheme, ThemeMode } from "../../lib/types.ts";
-import { applyTokens, resolveTokens } from "../../lib/themes.ts";
-import { write } from "../../lib/storage.ts";
+import type { Scheme, ThemeMode } from "@/lib/types.ts";
+import { applyTokens, resolveTokens } from "@/lib/themes.ts";
+import { write } from "@/lib/storage.ts";
 
 function resolveSystemTheme(): ThemeMode {
   return window.matchMedia("(prefers-color-scheme: dark)").matches

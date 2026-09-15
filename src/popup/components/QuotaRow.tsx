@@ -1,6 +1,6 @@
 import type { VNode } from "preact";
-import type { QuotaPillState, QuotaRecord } from "../derive.ts";
-import { deriveQuotaPillState, deriveSlotsToShow } from "../derive.ts";
+import type { QuotaPillState, QuotaRecord } from "@/popup/derive.ts";
+import { deriveQuotaPillState, deriveSlotsToShow } from "@/popup/derive.ts";
 import { CheckIcon, WarningIcon } from "./Icons.tsx";
 
 const PILL_CLASS: Record<QuotaPillState, string> = {
@@ -66,7 +66,7 @@ export function QuotaRow({
         >
           {name}
         </span>
-        <div class="ml-auto flex flex-none items-center gap-[5px]">
+        <div class="ml-auto flex flex-none items-center gap-1.25">
           {Array.from({ length: slotsToShow }, (_, index: number): VNode => {
             const filled: boolean = index < count;
             const over: boolean = index >= totalSlots;
@@ -75,7 +75,7 @@ export function QuotaRow({
                 key={index}
                 title={slotTitle(records[index])}
                 class={
-                  "grid size-[15px] place-items-center rounded-cell border " +
+                  "grid size-3.75 place-items-center rounded-cell border " +
                   (filled
                     ? over || isWarning
                       ? "border-stamp bg-stamp text-on-stamp"
@@ -88,13 +88,13 @@ export function QuotaRow({
             );
           })}
           <span
-            class={`ml-1 rounded-cell border px-[5px] py-0.5 font-num text-[10px] tabular-nums leading-tight whitespace-nowrap ${PILL_CLASS[pillState]}`}
+            class={`ml-1 rounded-cell border px-1.25 py-0.5 font-num text-[10px] tabular-nums leading-tight whitespace-nowrap ${PILL_CLASS[pillState]}`}
           >
             {count}/{totalSlots}
           </span>
         </div>
       </div>
-      <div class="mt-[3px] font-num text-[10.5px] tabular-nums text-ink-3 [overflow-wrap:anywhere]">
+      <div class="mt-0.75 font-num text-[10.5px] tabular-nums text-ink-3 wrap-anywhere">
         {detailText}
       </div>
     </div>

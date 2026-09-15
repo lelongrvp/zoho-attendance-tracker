@@ -1,6 +1,6 @@
 import type { VNode } from "preact";
 import { useEffect, useRef, useState } from "preact/hooks";
-import type { Translator } from "../../lib/i18n.ts";
+import type { Translator } from "@/lib/i18n.ts";
 import type {
   ArchivedMonth,
   AttendanceData,
@@ -8,14 +8,14 @@ import type {
   Lang,
   Policy,
   ZohoDay,
-} from "../../lib/types.ts";
+} from "@/lib/types.ts";
 import {
   getCycleAt,
   monthKeysInRange,
   monthsAgoFor,
   toLocalDateKey,
-} from "../../lib/policy.ts";
-import type { CalendarCellState } from "../derive.ts";
+} from "@/lib/policy.ts";
+import type { CalendarCellState } from "@/popup/derive.ts";
 import {
   buildCalendarDays,
   buildDayByKey,
@@ -24,14 +24,14 @@ import {
   deriveCalendarCells,
   deriveCycleLabel,
   mondayFirstOffset,
-} from "../derive.ts";
+} from "@/popup/derive.ts";
 import { CalendarGrid } from "./CalendarGrid.tsx";
 import { Legend } from "./Legend.tsx";
 import { ChevronIcon } from "./Icons.tsx";
 
 const MIN_CALENDAR_OFFSET: number = -12;
 const STEP_BUTTON_CLASS: string =
-  "grid size-[19px] flex-none place-items-center rounded-panel border border-rule-strong bg-transparent text-ink-3 enabled:hover:border-ink-3 enabled:hover:bg-wash enabled:hover:text-ink disabled:cursor-default disabled:opacity-30";
+  "grid size-4.75 flex-none place-items-center rounded-panel border border-rule-strong bg-transparent text-ink-3 enabled:hover:border-ink-3 enabled:hover:bg-wash enabled:hover:text-ink disabled:cursor-default disabled:opacity-30";
 
 type ArchiveFetchResponse = { status?: string; message?: string } | undefined;
 
@@ -134,11 +134,11 @@ export function CalendarView({
 
   return (
     <>
-      <div class="mt-4 flex items-baseline gap-2.5 border-b border-ink pb-[7px]">
-        <h2 class="text-[11px] font-bold tracking-[0.1em] text-ink uppercase">
+      <div class="mt-4 flex items-baseline gap-2.5 border-b border-ink pb-1.75">
+        <h2 class="text-[11px] font-bold tracking-widest text-ink uppercase">
           {translate("cycleCalendar")}
         </h2>
-        <div class="ml-auto flex items-center gap-[3px] self-center">
+        <div class="ml-auto flex items-center gap-0.75 self-center">
           <button
             type="button"
             title={translate("calPrev")}
@@ -151,9 +151,9 @@ export function CalendarView({
             }
             class={STEP_BUTTON_CLASS}
           >
-            <ChevronIcon direction="left" className="block size-[11px]" />
+            <ChevronIcon direction="left" className="block size-2.75" />
           </button>
-          <span class="min-w-[94px] text-center font-num text-[10px] tracking-[0.02em] whitespace-nowrap text-ink-3">
+          <span class="min-w-23.5 text-center font-num text-[10px] tracking-[0.02em] whitespace-nowrap text-ink-3">
             {label}
           </span>
           <button
@@ -168,7 +168,7 @@ export function CalendarView({
             }
             class={STEP_BUTTON_CLASS}
           >
-            <ChevronIcon direction="right" className="block size-[11px]" />
+            <ChevronIcon direction="right" className="block size-2.75" />
           </button>
         </div>
       </div>

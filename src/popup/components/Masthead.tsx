@@ -1,7 +1,7 @@
 import type { VNode } from "preact";
-import type { Lang, ThemeMode } from "../../lib/types.ts";
-import type { Translator } from "../../lib/i18n.ts";
-import type { Freshness } from "../derive.ts";
+import type { Lang, ThemeMode } from "@/lib/types.ts";
+import type { Translator } from "@/lib/i18n.ts";
+import type { Freshness } from "@/popup/derive.ts";
 import {
   MarkIcon,
   MoonIcon,
@@ -11,7 +11,7 @@ import {
 } from "./Icons.tsx";
 
 const ACTION_CLASS: string =
-  "grid size-[30px] flex-none cursor-pointer appearance-none place-items-center rounded-panel border border-rule-strong bg-transparent p-0 text-ink-2 transition-[background-color,color,border-color] duration-[160ms] ease-[ease] hover:border-ink-3 hover:bg-wash hover:text-ink active:bg-rule focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink";
+  "grid size-7.5 flex-none cursor-pointer appearance-none place-items-center rounded-panel border border-rule-strong bg-transparent p-0 text-ink-2 transition-[background-color,color,border-color] duration-160 ease-[ease] hover:border-ink-3 hover:bg-wash hover:text-ink active:bg-rule focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink";
 const ACTION_SPINNING_CLASS: string =
   "pointer-events-none border-ink bg-wash text-ink motion-reduce:opacity-[0.55]";
 const GLYPH_CLASS: string = "block size-[15px]";
@@ -40,8 +40,8 @@ export function Masthead({
   translate,
 }: MastheadProps): VNode {
   return (
-    <header class="flex items-center gap-[10px] border-b border-b-ink pb-[11px]">
-      <MarkIcon className="block size-[22px] flex-none" />
+    <header class="flex items-center gap-2.5 border-b border-b-ink pb-2.75">
+      <MarkIcon className="block size-5.5 flex-none" />
       <a
         class="group block text-inherit no-underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
         href="https://people.zoho.com/"
@@ -61,7 +61,7 @@ export function Masthead({
           </span>
         </span>
       </a>
-      <div class="ml-auto flex gap-[7px]">
+      <div class="ml-auto flex gap-1.75">
         <button
           type="button"
           class={ACTION_CLASS}

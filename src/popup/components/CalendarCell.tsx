@@ -1,8 +1,8 @@
 import type { VNode } from "preact";
-import type { CalendarCellStatus } from "../derive.ts";
+import type { CalendarCellStatus } from "@/popup/derive.ts";
 
 const CELL_BASE: string =
-  "grid h-[34px] place-items-center rounded-cell font-num text-[11px] tabular-nums";
+  "grid h-8.5 place-items-center rounded-cell font-num text-[11px] tabular-nums";
 
 type ColorSet = { bg: string; border: string; text: string };
 

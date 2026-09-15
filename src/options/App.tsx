@@ -8,14 +8,14 @@ import type {
   StorageShape,
   TargetMode,
   ZohoDay,
-} from "../lib/types.ts";
+} from "@/lib/types.ts";
 import {
   DEFAULT_PORTAL_ID,
   collectStatuses,
   readPolicy,
-} from "../lib/policy.ts";
-import { applyTokens, listSchemes, resolveTokens } from "../lib/themes.ts";
-import { read, remove, write } from "../lib/storage.ts";
+} from "@/lib/policy.ts";
+import { applyTokens, listSchemes, resolveTokens } from "@/lib/themes.ts";
+import { read, remove, write } from "@/lib/storage.ts";
 import type {
   FormResult,
   FormState,

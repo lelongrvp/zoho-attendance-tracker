@@ -1,5 +1,5 @@
 import type { VNode } from "preact";
-import type { Translator } from "../../lib/i18n.ts";
+import type { Translator } from "@/lib/i18n.ts";
 
 type LegendEntry = { key: string; swatchClass: string };
 
@@ -23,14 +23,14 @@ export type LegendProps = { translate: Translator };
 
 export function Legend({ translate }: LegendProps): VNode {
   return (
-    <div class="mt-3 flex flex-wrap gap-x-3 gap-y-[7px]">
+    <div class="mt-3 flex flex-wrap gap-x-3 gap-y-1.75">
       {ENTRIES.map((entry: LegendEntry): VNode => (
         <span
           key={entry.key}
-          class="flex items-center gap-[5px] text-[9.5px] text-ink-3"
+          class="flex items-center gap-1.25 text-[9.5px] text-ink-3"
         >
           <i
-            class={`block size-[10px] rounded-cell border ${entry.swatchClass}`}
+            class={`block size-2.5 rounded-cell border ${entry.swatchClass}`}
           />
           <em class="not-italic">{translate(entry.key)}</em>
         </span>

@@ -1,13 +1,17 @@
 import type { VNode } from "preact";
-import type { Translator } from "../../lib/i18n.ts";
-import type { Policy } from "../../lib/types.ts";
-import type { ActiveToday, TimerState, TimerStateClass } from "../derive.ts";
+import type { Translator } from "@/lib/i18n.ts";
+import type { Policy } from "@/lib/types.ts";
+import type {
+  ActiveToday,
+  TimerState,
+  TimerStateClass,
+} from "@/popup/derive.ts";
 import {
   derivePartTimeMarkerPercent,
   deriveProgressPercent,
   deriveTimerState,
-} from "../derive.ts";
-import { formatTime } from "../format.ts";
+} from "@/popup/derive.ts";
+import { formatTime } from "@/popup/format.ts";
 import { DoneIcon, WarningIcon } from "./Icons.tsx";
 import { WorkedLine } from "./WorkedLine.tsx";
 
@@ -95,7 +99,7 @@ export function TodayCard({
     : null;
 
   return (
-    <section class="mt-[13px] rounded-panel border border-rule bg-panel px-[14px] pt-[13px] pb-[14px]">
+    <section class="mt-3.25 rounded-panel border border-rule bg-panel px-3.5 pt-3.25 pb-3.5">
       <div class="flex items-baseline gap-3">
         <div class="flex items-baseline gap-1.5 whitespace-nowrap">
           <span class={EYEBROW_CLASS}>{translate("checkedIn")}</span>
@@ -109,13 +113,13 @@ export function TodayCard({
         </div>
       </div>
 
-      <div class="mt-[9px]">
+      <div class="mt-2.25">
         <div
-          class={`${COUNTDOWN_CLASS} gap-[7px] pt-[3px] pr-0 pb-[4px] pl-[11px] text-[24px] leading-[1.15] font-medium tracking-[-0.4px] ${COUNTDOWN_STATE_CLASS[fulltimeTimer.stateClass]}`}
+          class={`${COUNTDOWN_CLASS} gap-1.75 pt-0.75 pr-0 pb-1 pl-2.75 text-[24px] leading-[1.15] font-medium tracking-[-0.4px] ${COUNTDOWN_STATE_CLASS[fulltimeTimer.stateClass]}`}
         >
           <StateGlyph
             stateClass={fulltimeTimer.stateClass}
-            className="size-[15px] flex-none"
+            className="size-3.75 flex-none"
             strokeWidth="2.2"
           />
           <span>{fulltimeTimer.text}</span>
@@ -124,12 +128,12 @@ export function TodayCard({
 
       <div class="relative mt-3 h-1.5 overflow-hidden rounded-[2px] border border-rule bg-wash">
         <div
-          class="h-full bg-ink transition-[width] duration-[900ms] ease-[cubic-bezier(0.22,0.61,0.36,1)]"
+          class="h-full bg-ink transition-[width] duration-900 ease-[cubic-bezier(0.22,0.61,0.36,1)]"
           style={{ width: `${progressPercent.toFixed(1)}%` }}
         />
         {markerPercent === null ? null : (
           <div
-            class="absolute top-0 bottom-0 w-[2px] bg-ink-faint"
+            class="absolute top-0 bottom-0 w-0.5 bg-ink-faint"
             style={{ left: `${markerPercent.toFixed(1)}%` }}
           />
         )}
@@ -143,7 +147,7 @@ export function TodayCard({
         translate={translate}
       />
 
-      <div class="mt-3 flex items-center gap-2 border-t border-rule pt-[11px]">
+      <div class="mt-3 flex items-center gap-2 border-t border-rule pt-2.75">
         <span class={`${EYEBROW_CLASS} flex-none whitespace-nowrap`}>
           {translate("partTime")}
         </span>
@@ -151,11 +155,11 @@ export function TodayCard({
           {activeToday ? formatTime(activeToday.checkout1) : "--:--"}
         </span>
         <div
-          class={`${COUNTDOWN_CLASS} ml-auto min-w-0 gap-1.5 pl-[9px] text-[13px] font-medium tracking-[-0.2px] ${COUNTDOWN_STATE_CLASS[partTimeTimer.stateClass]}`}
+          class={`${COUNTDOWN_CLASS} ml-auto min-w-0 gap-1.5 pl-2.25 text-[13px] font-medium tracking-[-0.2px] ${COUNTDOWN_STATE_CLASS[partTimeTimer.stateClass]}`}
         >
           <StateGlyph
             stateClass={partTimeTimer.stateClass}
-            className="size-[13px] flex-none"
+            className="size-3.25 flex-none"
             strokeWidth="2.4"
           />
           <span>{partTimeTimer.text}</span>

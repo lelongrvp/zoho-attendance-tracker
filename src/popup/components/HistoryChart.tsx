@@ -4,13 +4,13 @@ import type {
   HistoryBarKind,
   HistoryDay,
   HistoryRefLine,
-} from "../derive.ts";
+} from "@/popup/derive.ts";
 import {
   deriveHistoryBars,
   deriveHistoryRefLines,
   deriveHistoryScale,
-} from "../derive.ts";
-import type { Policy } from "../../lib/types.ts";
+} from "@/popup/derive.ts";
+import type { Policy } from "@/lib/types.ts";
 
 const BAR_KIND_CLASS: Record<HistoryBarKind, string> = {
   none: "bg-ink",

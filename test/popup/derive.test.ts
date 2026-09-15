@@ -1,14 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { DEFAULT_POLICY } from "../../src/lib/policy.ts";
-import { makeTranslator } from "../../src/lib/i18n.ts";
-import type { Translator } from "../../src/lib/i18n.ts";
-import type { Policy, ZohoDay } from "../../src/lib/types.ts";
+import { DEFAULT_POLICY } from "@/lib/policy.ts";
+import { makeTranslator } from "@/lib/i18n.ts";
+import type { Translator } from "@/lib/i18n.ts";
+import type { Policy, ZohoDay } from "@/lib/types.ts";
 import type {
   CalendarCellState,
   HistoryBar,
   HistoryDay,
   TimerState,
-} from "../../src/popup/derive.ts";
+} from "@/popup/derive.ts";
 import {
   buildDayByKey,
   deriveAlert,
@@ -18,7 +18,7 @@ import {
   deriveSlotsToShow,
   deriveTimerState,
   shouldRequestBackgroundRefresh,
-} from "../../src/popup/derive.ts";
+} from "@/popup/derive.ts";
 
 const translate: Translator = makeTranslator("en");
 const policy: Policy = DEFAULT_POLICY;

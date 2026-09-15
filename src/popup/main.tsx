@@ -1,9 +1,9 @@
 import { render } from "preact";
 import { App } from "./App.tsx";
 import "../styles/app.css";
-import type { Scheme, ThemeMode } from "../lib/types.ts";
-import { read } from "../lib/storage.ts";
-import { applyTokens, resolveTokens } from "../lib/themes.ts";
+import type { Scheme, ThemeMode } from "@/lib/types.ts";
+import { read } from "@/lib/storage.ts";
+import { applyTokens, resolveTokens } from "@/lib/themes.ts";
 
 /** Paint the real palette before first frame; the effect would be one frame late. */
 const stored: Partial<{

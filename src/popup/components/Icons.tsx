@@ -1,6 +1,7 @@
 import type { VNode } from "preact";
 
 type IconProps = { className?: string };
+type StrokedIconProps = IconProps & { strokeWidth?: string };
 
 export function MarkIcon({ className }: IconProps): VNode {
   return (
@@ -108,14 +109,17 @@ export function RefreshIcon({ className }: IconProps): VNode {
   );
 }
 
-export function WarningIcon({ className }: IconProps): VNode {
+export function WarningIcon({
+  className,
+  strokeWidth,
+}: StrokedIconProps): VNode {
   return (
     <svg
       class={className}
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
-      stroke-width="2.2"
+      stroke-width={strokeWidth ?? "2.2"}
       stroke-linecap="round"
       stroke-linejoin="round"
       aria-hidden="true"
@@ -124,6 +128,25 @@ export function WarningIcon({ className }: IconProps): VNode {
       <path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z" />
       <line x1="12" y1="9" x2="12" y2="13.5" />
       <line x1="12" y1="17" x2="12.01" y2="17" />
+    </svg>
+  );
+}
+
+export function DoneIcon({ className, strokeWidth }: StrokedIconProps): VNode {
+  return (
+    <svg
+      class={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width={strokeWidth ?? "2.2"}
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      aria-hidden="true"
+      focusable="false"
+    >
+      <circle cx="12" cy="12" r="9.5" />
+      <polyline points="8 12.2 11 15.2 16.2 9" />
     </svg>
   );
 }

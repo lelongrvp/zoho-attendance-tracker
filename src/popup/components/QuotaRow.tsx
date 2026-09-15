@@ -58,6 +58,7 @@ export function QuotaRow({
             className={`size-3 flex-none -mr-1 transition-colors duration-200 ${
               flagged ? "text-stamp" : "text-ink-faint"
             }`}
+            strokeWidth="2.4"
           />
         ) : null}
         <span

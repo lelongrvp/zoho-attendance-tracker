@@ -182,6 +182,12 @@ export function findActiveCheckin(
   return null;
 }
 
+// Part-day leave still owes the rest of the day: 0.25 leave means 0.75 of every target.
+export function workingFraction(day: ZohoDay | null | undefined): number {
+  const leaveDays: number = Number(day?.leaveDaysTaken) || 0;
+  return Math.min(1, Math.max(0, 1 - leaveDays));
+}
+
 export function computeTargets(checkinDate: Date, policy: Policy): Targets {
   const checkinMinutes: number =
     checkinDate.getHours() * 60 + checkinDate.getMinutes();

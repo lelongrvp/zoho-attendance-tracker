@@ -142,6 +142,12 @@ export type LastError = {
   at: number;
 };
 
+/** Which gates have already notified today, so a re-arm does not re-fire them. */
+export type GateState = {
+  date: string;
+  fired: string[];
+};
+
 export type StorageShape = {
   attendanceData: AttendanceData;
   archivedMonths: Record<string, ArchivedMonth>;
@@ -155,7 +161,7 @@ export type StorageShape = {
   scheme: string;
   customScheme: Scheme;
   activeTab: "attendance" | "calendar";
-  gateState: { date: string; fired: string[] };
+  gateState: GateState;
 };
 
 export type StorageKey = keyof StorageShape;

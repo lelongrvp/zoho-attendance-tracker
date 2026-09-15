@@ -85,7 +85,7 @@ globalThis.fetch = async () => ({
   }),
 });
 
-await import("../../src/worker/background.js");
+await import("../../src/worker/background.ts");
 const send = () =>
   new Promise((r) => listeners.message({ action: "updateAttendance" }, {}, r));
 

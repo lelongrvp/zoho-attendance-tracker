@@ -83,7 +83,7 @@ const key = (d) =>
 let payload = null;
 globalThis.fetch = async () => ({ ok: true, json: async () => payload });
 
-await import("../../src/worker/background.js");
+await import("../../src/worker/background.ts");
 const send = () =>
   new Promise((r) => listeners.message({ action: "updateAttendance" }, {}, r));
 

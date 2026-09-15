@@ -1,6 +1,6 @@
 import type { TargetedInputEvent, VNode } from "preact";
-import type { Scheme, SchemeColors, ThemeMode } from "../../lib/types.ts";
-import { COLOR_KEYS } from "../form.ts";
+import type { Scheme, SchemeColors, ThemeMode } from "@/lib/types.ts";
+import { COLOR_KEYS } from "@/options/form.ts";
 
 type CustomSchemeProps = {
   scheme: Scheme;

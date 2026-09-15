@@ -1,6 +1,6 @@
 import assert from "node:assert";
 globalThis.chrome = { storage: { local: { get: async () => ({}) } } };
-const { parseZohoTimestamp, computeWorkedMs, isZohoDate, isPlaceholderTime } =
+const { parseZohoTimestamp, computeWorked, isZohoDate, isPlaceholderTime } =
   await import("../../src/lib/policy.ts");
 
 // the live format from the user's worker console
@@ -25,29 +25,35 @@ console.log("2 OK  date-only, isZohoDate, placeholder detection");
 
 // exactly the user's live day: one closed pair + one open with tdate "-"
 const now = new Date(2026, 8, 10, 15, 0, 0);
-const live = computeWorkedMs(
-  [
-    { fdate: "10-Sep-2026 - 09:29", tdate: "10-Sep-2026 - 11:53" },
-    { fdate: "10-Sep-2026 - 13:00", tdate: "-" },
-  ],
+const live = computeWorked(
+  {
+    orgdate: "2026-09-10",
+    filo: { checkin: "10-Sep-2026 - 09:29", checkout: "-" },
+  },
   now,
 );
-const expectedMs = (2 * 60 + 24) * 60 * 1000 + 2 * 3600 * 1000; // 2h24 closed + 2h open
+// 09:29 -> 15:00, still open
+const expectedMs = (5 * 60 + 31) * 60 * 1000;
 assert.strictEqual(
   live.workedMs,
   expectedMs,
   `got ${live.workedMs / 3600000}h`,
 );
-assert.strictEqual(live.isOpen, true, "tdate '-' must read as an open session");
+assert.strictEqual(
+  live.isOpen,
+  true,
+  "checkout '-' must read as an open session",
+);
 assert.ok(Number.isFinite(live.workedMs), "no NaN from the placeholder");
-console.log("3 OK  live pair+placeholder day: 4h24m worked, open — no NaN");
+console.log("3 OK  live DMY check-in, open day: 5h31m worked — no NaN");
 
 // ISO fixtures must keep working
-const iso = computeWorkedMs(
-  [
-    { fdate: "2026-09-10 09:00:00", tdate: "2026-09-10 12:00:00" },
-    { fdate: "2026-09-10 13:00:00" },
-  ],
+const iso = computeWorked(
+  {
+    orgdate: "2026-09-10",
+    tsecs: 5 * 3600,
+    filo: { checkin: "2026-09-10 09:00:00", checkout: "2026-09-10 15:00:00" },
+  },
   now,
 );
 assert.strictEqual(iso.workedMs, 5 * 3600 * 1000);

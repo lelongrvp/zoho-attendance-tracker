@@ -1,10 +1,7 @@
 import { useEffect, useState } from "preact/hooks";
-import type {
-  StorageChanges,
-  StorageChangeListener,
-} from "../../lib/storage.ts";
-import { onLocalChange, read } from "../../lib/storage.ts";
-import type { StorageKey, StorageShape } from "../../lib/types.ts";
+import type { StorageChanges, StorageChangeListener } from "@/lib/storage.ts";
+import { onLocalChange, read } from "@/lib/storage.ts";
+import type { StorageKey, StorageShape } from "@/lib/types.ts";
 
 export function useStorage<K extends StorageKey>(
   keys: readonly K[],

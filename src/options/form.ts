@@ -1,6 +1,6 @@
-import type { Policy, Scheme, TargetMode, ThemeMode } from "../lib/types.ts";
-import { DEFAULT_POLICY, pad } from "../lib/policy.ts";
-import { SCHEMES } from "../lib/themes.ts";
+import type { Policy, Scheme, TargetMode, ThemeMode } from "@/lib/types.ts";
+import { DEFAULT_POLICY, pad } from "@/lib/policy.ts";
+import { SCHEMES } from "@/lib/themes.ts";
 
 /** Policy keys edited as plain numbers. */
 const PLAIN_FIELDS = {

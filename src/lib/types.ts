@@ -8,12 +8,20 @@ export type ZohoEntry = {
   tdate?: string;
 };
 
+/** First-in / last-out. Zoho's own resolution of a day's punches. */
+export type ZohoFilo = {
+  checkin?: string;
+  checkout?: string;
+};
+
 export type ZohoDay = {
   orgdate: string;
   tsecs?: number | string;
   status?: string;
   leaveDaysTaken?: number | string;
   approvalInfo?: unknown;
+  filo?: ZohoFilo;
+  totalUnPaidBreakInSecs?: number | string;
 };
 
 export type AttendanceData = {
@@ -142,6 +150,12 @@ export type LastError = {
   at: number;
 };
 
+/** Which gates have already notified today, so a re-arm does not re-fire them. */
+export type GateState = {
+  date: string;
+  fired: string[];
+};
+
 export type StorageShape = {
   attendanceData: AttendanceData;
   archivedMonths: Record<string, ArchivedMonth>;
@@ -155,7 +169,7 @@ export type StorageShape = {
   scheme: string;
   customScheme: Scheme;
   activeTab: "attendance" | "calendar";
-  gateState: { date: string; fired: string[] };
+  gateState: GateState;
 };
 
 export type StorageKey = keyof StorageShape;

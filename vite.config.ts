@@ -8,6 +8,9 @@ export default defineConfig({
   root: "src",
   publicDir: resolve(import.meta.dirname, "public"),
   plugins: [preact(), tailwindcss()],
+  resolve: {
+    alias: { "@": resolve(import.meta.dirname, "src") },
+  },
   build: {
     outDir: resolve(import.meta.dirname, "dist"),
     emptyOutDir: true,
@@ -16,7 +19,7 @@ export default defineConfig({
       input: {
         popup: resolve(import.meta.dirname, "src/popup/index.html"),
         options: resolve(import.meta.dirname, "src/options/index.html"),
-        background: resolve(import.meta.dirname, "src/worker/background.js"),
+        background: resolve(import.meta.dirname, "src/worker/background.ts"),
       },
       output: {
         // background.js is named literally by the manifest, so it must not be hashed.

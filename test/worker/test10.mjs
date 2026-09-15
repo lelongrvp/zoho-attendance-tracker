@@ -78,7 +78,7 @@ globalThis.fetch = async (url, init) => {
   };
 };
 
-await import("../../src/worker/background.js");
+await import("../../src/worker/background.ts");
 assert.ok(messageListener, "worker must register a message listener");
 
 const send = (request) =>

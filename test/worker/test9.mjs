@@ -67,7 +67,7 @@ globalThis.fetch = async () => ({
     },
   }),
 });
-await import("../../src/worker/background.js");
+await import("../../src/worker/background.ts");
 await new Promise((r) => listeners.m({ action: "updateAttendance" }, {}, r));
 const cached = store.get("attendanceData").entries[today];
 assert.strictEqual(

@@ -35,6 +35,16 @@
   --radius-panel: 3px;
 }
 
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
 /* Holiday fill. The `background` shorthand wipes any bg-* on the same element. */
 @utility hatch {
   background: repeating-linear-gradient(

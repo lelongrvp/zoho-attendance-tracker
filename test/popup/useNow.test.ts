@@ -1,6 +1,6 @@
 import { act, renderHook } from "@testing-library/preact";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { useNow } from "../../src/popup/hooks/useNow.ts";
+import { useNow } from "@/popup/hooks/useNow.ts";
 
 beforeEach(() => {
   vi.useFakeTimers();

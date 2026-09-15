@@ -9,14 +9,14 @@ import type {
   Targets,
   WorkedTargets,
   ZohoDay,
-  ZohoEntry,
-} from "../lib/types.ts";
-import type { Translator } from "../lib/i18n.ts";
-import { monthNames } from "../lib/i18n.ts";
+} from "@/lib/types.ts";
+import type { Translator } from "@/lib/i18n.ts";
+import { monthNames } from "@/lib/i18n.ts";
 import {
   classifyNonWorkingDay,
   computeEffectiveTargets,
   computeWorkedTargets,
+  findDay,
   describeAttendanceRequest,
   findActiveCheckin,
   getCurrentCycle,
@@ -27,7 +27,7 @@ import {
   pad,
   parseZohoTimestamp,
   toLocalDateKey,
-} from "../lib/policy.ts";
+} from "@/lib/policy.ts";
 import {
   formatAgo,
   formatDayLabel,
@@ -92,7 +92,7 @@ export type ActiveToday = {
   isFromYesterday: boolean;
   checkout1: Date;
   fulltime: Date;
-  dayEntries: ZohoEntry[] | null;
+  day: ZohoDay | null;
 };
 
 export function deriveActiveToday(
@@ -114,14 +114,13 @@ export function deriveActiveToday(
     now,
     policy,
   );
-  const dayEntries: ZohoEntry[] | null =
-    attendanceData?.entries?.[toLocalDateKey(active.checkin)] ?? null;
+  const day: ZohoDay | null = findDay(attendanceData, active.checkin);
   return {
     checkin: active.checkin,
     isFromYesterday: active.isFromYesterday,
     checkout1: targets.partTime,
     fulltime: targets.fullTime,
-    dayEntries,
+    day,
   };
 }
 
@@ -192,17 +191,14 @@ export type WorkedLineState = {
 };
 
 export function deriveWorkedLine(
-  dayEntries: ZohoEntry[] | null,
+  day: ZohoDay | null,
   now: Date,
   policy: Policy,
   fulltimeDate: Date | null,
   translate: Translator,
 ): WorkedLineState | null {
-  if (!dayEntries) {
-    return null;
-  }
   const workedTargets: WorkedTargets | null = computeWorkedTargets(
-    dayEntries,
+    day,
     now,
     policy,
   );

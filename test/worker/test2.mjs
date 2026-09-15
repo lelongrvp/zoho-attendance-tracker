@@ -53,6 +53,19 @@ globalThis.chrome = {
   },
 };
 
+// Frozen at 16:00: run live past ~18:15 and full-time crosses 19:30, arming the long-day gate.
+const frozen = new Date();
+frozen.setHours(16, 0, 0, 0);
+const RealDate = Date;
+globalThis.Date = class extends RealDate {
+  constructor(...args) {
+    super(...(args.length ? args : [frozen.getTime()]));
+  }
+  static now() {
+    return frozen.getTime();
+  }
+};
+
 const now = new Date();
 const key = (d) =>
   `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
@@ -62,12 +75,13 @@ const fdate = `${key(checkin)} ${String(checkin.getHours()).padStart(2, "0")}:${
 globalThis.fetch = async () => ({
   ok: true,
   json: async () => ({
-    dayList: { 0: { orgdate: key(checkin), tsecs: 8 * 3600 } },
-    entries: { [key(now)]: [{ fdate }] },
+    dayList: {
+      0: { orgdate: key(now), tsecs: 8 * 3600, filo: { checkin: fdate } },
+    },
   }),
 });
 
-await import("../../src/worker/background.js");
+await import("../../src/worker/background.ts");
 const send = () =>
   new Promise((r) => listeners.message({ action: "updateAttendance" }, {}, r));
 

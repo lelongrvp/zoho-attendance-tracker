@@ -1,5 +1,5 @@
 import type { VNode } from "preact";
-import type { StatusCount } from "../../lib/types.ts";
+import type { StatusCount } from "@/lib/types.ts";
 
 type StatusesSeenProps = {
   statuses: StatusCount[];

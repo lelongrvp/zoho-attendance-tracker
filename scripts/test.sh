@@ -23,12 +23,8 @@ for suite in test/worker/test*.mjs; do
   "$node_bin" "$suite" | tail -1
 done
 
-echo "\n--- popup.js <-> popup.html contract ---"
-# Deleted in phase 4 of the 1.9.0 conversion: once the popup is JSX, a
-# reference to an element that does not exist is a compile error instead.
-if [[ -f test/contract.sh ]]; then
-  bash test/contract.sh | tail -3
-fi
+echo "\n--- component and pure-logic units ---"
+pnpm -s test:unit 2>&1 | grep -E "Test Files|Tests " | sed 's/^/  /'
 
 echo "\n--- deprecated preact types ---"
 if grep -rn "JSX\.Targeted\|JSX\.Element" src/ 2>/dev/null; then
@@ -45,6 +41,9 @@ pnpm -s typecheck && echo "  clean"
 
 echo "\n--- build ---"
 pnpm -s build >/dev/null && echo "  dist/ built"
+
+echo "\n--- MV3 / CSP safety ---"
+bash test/csp-scan.sh | tail -4
 
 echo "\n--- options page round-trip ---"
 "$node_bin" test/render/options.mjs

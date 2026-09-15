@@ -71,30 +71,36 @@ header overrides that, and the choice is remembered in `chrome.storage.local`.
 Non-developers: see **INSTALL.md** (English + Tiếng Việt). The intended
 distribution channel is the Chrome Web Store as an _unlisted_ extension —
 one-click install and automatic updates; `store/listing.md` is the complete
-submission kit and `scripts/package.sh` builds the store-ready zip from the
-committed tree.
+submission kit and `scripts/package.sh` builds the store-ready zip from a fresh
+build.
 
 For development:
 
-1. Open `chrome://extensions` and turn on **Developer mode**.
-2. **Load unpacked**, then pick this directory.
-3. Sign in to <https://people.zoho.com/> in the same browser profile. The
+1. `pnpm install`, then `pnpm build`.
+2. Open `chrome://extensions` and turn on **Developer mode**.
+3. **Load unpacked**, then pick `dist/` — not this directory. Since 1.9.0 the
+   loadable extension is the build output; the repo root holds sources Chrome
+   cannot read.
+4. Sign in to <https://people.zoho.com/> in the same browser profile. The
    extension reads the `CSRF_TOKEN` cookie and reuses your existing session; it
    never handles your password.
 
-After editing any file, press **Reload** on the extension card. There is no build
-step, no dependencies, and no package manager.
+`pnpm dev` rebuilds on save. Popup and options changes are picked up by closing
+and reopening them; a worker change needs **Reload** on the extension card.
+`pnpm test` is the whole contract and is what "it works" means here.
 
 ## How it works
 
-`background.js` is the service worker. It reads the CSRF token from the Zoho
-cookie, POSTs twice to `AttendanceViewAction.zp` (the current month and the
-previous one), merges and de-duplicates the two responses, and caches the result
-in `chrome.storage.local`. A `chrome.alarms` timer repeats this every 15 minutes,
+`src/worker/background.ts` is the service worker, built to `dist/background.js`.
+It reads the CSRF token from the Zoho cookie, POSTs twice to
+`AttendanceViewAction.zp` (the current month and the previous one), merges and
+de-duplicates the two responses, and caches the result in
+`chrome.storage.local`. A `chrome.alarms` timer repeats this every 15 minutes,
 which matters because an MV3 service worker is shut down whenever it goes idle.
 
-`popup.js` only reads that cache and renders it, so opening the popup is instant.
-The refresh button messages the worker and reports failures inline.
+The popup (`src/popup/`, Preact) only reads that cache and renders it, so
+opening the popup is instant. The refresh button messages the worker and reports
+failures inline.
 
 ## Configuration
 
@@ -107,7 +113,7 @@ chrome.storage.local.set({ portalId: "hrportal0000000000000" });
 ```
 
 The attendance policy — quotas, target offsets, the late-start cutoff, the
-late-evening threshold, the cycle start day — lives in `policy.js`
+late-evening threshold, the cycle start day — lives in `src/lib/policy.ts`
 (`DEFAULT_POLICY`) and is edited from the **options page** (gear icon in the
 popup, or Options on `chrome://extensions`). The console route still works and
 writes the same keys:
@@ -125,7 +131,7 @@ matched case-insensitively anywhere in a day's `status`, so "Weekend/Holiday",
 Holiday is tested first, and an unmatched status leaves the day rendering as
 it always did. The options page shows the distinct statuses in your cached
 data, with counts, so the lists can be matched to what this portal really
-sends rather than to what `policy.js` guesses it sends.
+sends rather than to what `src/lib/policy.ts` guesses it sends.
 
 ## Known limitations
 
@@ -192,93 +198,14 @@ guessed at, and never warned about once a second from the popup's timer loop.
 
 ## Roadmap
 
-The next version is **1.9.0**, and it converts the front end to a framework.
-Nothing else ships with it. Everything that was queued as 1.8.3 through 1.8.9
-waits until the conversion is done — including the Chrome Web Store release,
-which will now publish the rewritten extension rather than this one.
-
-The trade that buys: the rewrite happens while the surface is small and nobody
-outside this machine depends on it, and there is no window where two versions
-of the same UI have to be kept working. What it costs: the conversion is
-validated by the test suite and by daily use, not by other people's machines,
-because the release comes after it.
-
-### 1.9.0 — Framework conversion, and only that
-
-**In scope.** The popup and the options page. That is the whole feature list;
-no behaviour changes, no new tabs, no visual redesign. A version of this
-README's _What it shows_ section that is still true afterwards is the goal.
-
-**Explicitly not in scope.** The service worker — MV3's worker is an event
-handler with no DOM, and a framework buys it nothing. `policy.js`, `themes.js`
-and `i18n.js` are framework-agnostic already and should come through
-untouched; if the rewrite wants to change them, that is a sign the rewrite is
-doing too much.
-
-**The one thing that ships alongside it**, because it is the conversion's own
-harness rather than an enhancement: the test suites move into the repo. Ten
-node suites, the DOM-contract check and the render harnesses currently live in
-a temporary directory. They are the definition of "the rewrite is correct", so
-they have to exist before it starts, not after.
-
-**Constraints the framework choice has to respect.**
-
-- **MV3's CSP forbids remote scripts and `eval`**, so everything ships
-  bundled and self-contained. This supersedes the no-build-step entry below,
-  for the front end only.
-- **The popup must still paint from cache on the first frame.** Today it
-  renders cached data immediately and revalidates behind it. A framework that
-  pays hydration cost before first paint trades away the property the whole
-  design rests on — measure it rather than assuming it.
-- **The worker suites must pass unchanged.** They are what proves the
-  behaviour survived; rewriting them alongside the UI would prove nothing.
-- **The DOM-contract check gets deleted rather than replaced.** It exists
-  because `popup.js` and `popup.html` can disagree about an id; after the
-  conversion they are one file, and TypeScript catches what it caught.
-- **Both themes, both languages, ten colorschemes and the custom scheme keep
-  working**, driven by the same tokens and string tables as now.
-
-**Decided 2026-09-10: Preact, TypeScript, plain Vite, Tailwind v4.**
-
-- **Preact** over React: ~4.5KB gzip against ~45KB on a surface that parses
-  its bundle on every open. Same JSX, same hooks; nothing on the roadmap needs
-  a React-only library. The cost is a small dialect shift — `preact/hooks`
-  imports, and `onInput` where React would use `onChange`.
-- **TypeScript**, because the build step exists either way. It earns its place
-  on the payload specifically: `approvalInfo: unknown` turns the README's
-  unverified assumption into something the compiler enforces at every use
-  site.
-- **Plain Vite**, three entries, static manifest in `public/`. No extension
-  plugin in the dependency path. The dev loop is `vite build --watch` plus the
-  reload button, because the dev server's inline scripts violate MV3's CSP.
-- **Tailwind v4** replaces the hand-written CSS, chosen knowingly against the
-  alternative of keeping it. `@theme` declares the tokens and `themes.js`
-  keeps overriding them at runtime, so the ten colorschemes need no Tailwind
-  involvement and no `dark:` variant is ever written — mode is an input to the
-  resolver, not a CSS state. The risk is real and named: 1,032 lines of
-  measured CSS are being rewritten, and the calendar alignment invariant has
-  to be re-proved by the render harness, not assumed.
-
-Runtime dependencies: `preact`, `@preact/signals`, `clsx`. That is the
-complete list. Storage is the store — no state library. The date handling
-stays hand-rolled; a date library would re-open the timezone bugs `policy.js`
-exists to have fixed.
-
-**Phases**, each ending green and committed before the next starts: tests into
-the repo (0), toolchain with the old code still in place (1), `lib/` to
-TypeScript (2), options page (3), popup (4), worker to TypeScript without a
-framework (5), cleanup and packaging (6). Converting the build before
-converting the code separates "does Vite produce a loadable MV3 extension"
-from "does the rewrite behave the same".
-
-**Done when** every behaviour in the release notes below still holds, the
-suite passes unchanged, and `scripts/package.sh` ships a bundle that loads
-unpacked with no CSP errors.
+**1.9.0 shipped the framework conversion and nothing else** — see the release
+notes below. Everything that was queued as 1.8.3 through 1.8.9 was waiting on
+it, including the Chrome Web Store release, which now publishes the converted
+extension. Those items are next, in the order they are most likely to matter.
 
 ### After 1.9.0
 
-Deferred from the 1.8 line by the change of plan, in the order they are most
-likely to matter. None of them are started until the conversion is done.
+Deferred from the 1.8 line by the change of plan.
 
 - **Chrome Web Store, unlisted** — the submission kit is already written
   (`store/listing.md`, `store/announcement.md`, `PRIVACY.md`, `INSTALL.md`).
@@ -330,14 +257,55 @@ and UI shipped in 1.4.0; only the default is conservative.
   at) holds for fetching history nobody asked for, not for a month the user
   just navigated to.
 - **`chrome.storage.sync`**: single user, single machine; adds write quotas.
-- **Charting library / build step / TypeScript**: MV3 CSP forbids remote
-  scripts and the no-tooling property is a feature at this size — superseded
-  for the front end by 1.9.0, which cannot ship a framework without bundling.
-  The worker keeps the property.
+- ~~**Charting library / build step / TypeScript**~~ — superseded by 1.9.0,
+  which cannot ship a framework without bundling. The worker was meant to keep
+  the no-tooling property and did not: once every module it imports was
+  TypeScript, staying `.js` bought it nothing but untyped storage reads.
+  Charting is still declined; the hours row is drawn with divs.
 - **Options page as the only config path**: console overrides intentionally
   keep working; they write the same storage keys.
 
 ## Release notes
+
+### 1.9.0 — 2026-09-15
+
+The framework conversion, and only that. Every behaviour above is unchanged;
+what changed is everything underneath it.
+
+- **Preact + TypeScript + Vite + Tailwind v4.** The popup's 899-line
+  `popup.js` closure and its 1,032 lines of hand-written CSS are gone, replaced
+  by fourteen components, four hooks and two pure modules (`derive.ts`,
+  `format.ts`) under `src/popup/`. The options page came over in the same
+  shape. `src/lib/` is TypeScript with an explicit type on every declaration
+  and return, enforced by `test/annotations.mjs`.
+- **The service worker converted too**, to TypeScript but not to a framework —
+  MV3's worker is an event handler with no DOM. Every `chrome.*.addListener`
+  still registers synchronously at top level, which is what lets Chrome wake
+  the worker for the event that needs it.
+- **The calendar alignment invariant was re-proved, not assumed.** The render
+  harness measures the built extension and reports the same
+  `47.14x34.00, glyph 10.03/13.00` in light/en, dark/en and light/vi that the
+  hand-written CSS produced. It had been silently measuring zero cells for part
+  of the conversion; the selector it keys off is now a `data-cal-cell`
+  attribute, which reads as a test seam rather than as deletable dead CSS.
+- **No `dark:` variant anywhere**, by design. The ten colorschemes and the
+  custom scheme still resolve through `themes.ts` writing `--color-*` at
+  runtime, so mode is an input to the resolver and never a CSS state. The
+  popup now applies the palette before the first `render()` rather than one
+  frame late.
+- **The popup still paints from cache on the first frame.** Storage answers
+  asynchronously, so the alert strip and the freshness stamp render as chrome
+  only until the first read lands — never a login prompt or a red "never
+  updated" that a read is about to contradict.
+- **The suite moved into the repo and grew.** Ten worker suites, 49 component
+  and pure-logic unit tests, the explicit-types check, `tsc --noEmit`, the
+  build, an MV3/CSP scan of both built pages, the options round-trip and the
+  alignment harness — all under `pnpm test`, which stops at the first failure.
+  The old DOM-contract check is gone: TypeScript catches what it caught, except
+  for the CSP section, which became `test/csp-scan.sh`.
+- **`scripts/package.sh` zips a fresh build** into `release/` instead of
+  `git archive`-ing loose files, and fails if the build did not produce a
+  loadable extension. Load `dist/`, not the repo root.
 
 ### 1.8.2.1 — 2026-09-10
 

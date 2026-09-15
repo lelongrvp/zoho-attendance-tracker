@@ -173,8 +173,11 @@ export function findActiveCheckin(
   if (
     yesterdayCheckin &&
     (allowElapsed ||
-      computeTargets(yesterdayCheckin, policy).fullTime.getTime() >
-        now.getTime())
+      computeTargets(
+        yesterdayCheckin,
+        policy,
+        workingFraction(findDay(attendanceData, yesterday)),
+      ).fullTime.getTime() > now.getTime())
   ) {
     return { checkin: yesterdayCheckin, isFromYesterday: true };
   }
@@ -188,7 +191,11 @@ export function workingFraction(day: ZohoDay | null | undefined): number {
   return Math.min(1, Math.max(0, 1 - leaveDays));
 }
 
-export function computeTargets(checkinDate: Date, policy: Policy): Targets {
+export function computeTargets(
+  checkinDate: Date,
+  policy: Policy,
+  fraction: number,
+): Targets {
   const checkinMinutes: number =
     checkinDate.getHours() * 60 + checkinDate.getMinutes();
   const isLateStart: boolean = checkinMinutes >= policy.lateStartAfterMinutes;
@@ -199,9 +206,22 @@ export function computeTargets(checkinDate: Date, policy: Policy): Targets {
     ? policy.lateFullTimeHours
     : policy.earlyFullTimeHours;
 
+  // The break allowance is whatever the offset adds on top of the work itself,
+  // and it is taken whole - leave shortens the work, not the lunch break.
+  const scaled = (offsetHours: number, workSeconds: number): number => {
+    const workHours: number = workSeconds / 3600;
+    return offsetHours - workHours + workHours * fraction;
+  };
+
   return {
-    partTime: new Date(checkinDate.getTime() + partTimeHours * 3600 * 1000),
-    fullTime: new Date(checkinDate.getTime() + fullTimeHours * 3600 * 1000),
+    partTime: new Date(
+      checkinDate.getTime() +
+        scaled(partTimeHours, policy.shortDaySeconds) * 3600 * 1000,
+    ),
+    fullTime: new Date(
+      checkinDate.getTime() +
+        scaled(fullTimeHours, policy.fullDaySeconds) * 3600 * 1000,
+    ),
   };
 }
 
@@ -280,7 +300,11 @@ export function computeEffectiveTargets(
       };
     }
   }
-  return computeTargets(active.checkin, policy);
+  return computeTargets(
+    active.checkin,
+    policy,
+    workingFraction(findDay(attendanceData, active.checkin)),
+  );
 }
 
 // Anchored to the day work started, not to the target's own day: a late start

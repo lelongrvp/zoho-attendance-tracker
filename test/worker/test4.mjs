@@ -4,6 +4,7 @@ import assert from "node:assert";
 globalThis.chrome = { storage: { local: { get: async () => ({}) } } };
 const {
   computeWorked,
+  computeTargets,
   computeWorkedTargets,
   computeEffectiveTargets,
   findDay,
@@ -166,5 +167,64 @@ assert.strictEqual(
   "checkout - checkin - unpaid break reconciles with tsecs",
 );
 console.log("9 OK  2026-09-15 regression: 7h46m, not the 1h15m lunch break");
+
+// ---- part-day leave shortens the work, never the break
+const leaveCheckin = new Date(2026, 8, 15, 11, 12, 0);
+const hhmm = (d) =>
+  `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+
+// a whole day is untouched: 11:12 + 9.25h and + 7.25h, exactly as before
+let leaveTargets = computeTargets(leaveCheckin, DEFAULT_POLICY, 1);
+assert.strictEqual(hhmm(leaveTargets.fullTime), "20:27");
+assert.strictEqual(hhmm(leaveTargets.partTime), "18:27");
+console.log("10 OK  fraction 1 leaves the offsets exactly as they were");
+
+// 0.25 day leave: 0.75 x 8h of work, plus the whole 1h15m break
+leaveTargets = computeTargets(leaveCheckin, DEFAULT_POLICY, 0.75);
+assert.strictEqual(
+  hhmm(leaveTargets.fullTime),
+  "18:27",
+  "full-time is 1h15m break + 6h work after 11:12",
+);
+assert.strictEqual(hhmm(leaveTargets.partTime), "16:57");
+console.log(
+  "11 OK  0.25 leave pulls full-time 20:27 -> 18:27, break kept whole",
+);
+
+// a late start carries no break in its offsets, so the work scales alone
+leaveTargets = computeTargets(
+  new Date(2026, 8, 15, 14, 0, 0),
+  DEFAULT_POLICY,
+  0.75,
+);
+assert.strictEqual(hhmm(leaveTargets.fullTime), "20:00", "14:00 + 0.75 x 8h");
+console.log(
+  "12 OK  late start has no break to keep, so 0.75 x 8h stands alone",
+);
+
+// and it reaches the popup and the worker through computeEffectiveTargets
+const leaveData = {
+  dayList: {
+    0: {
+      orgdate: "2026-09-15",
+      tsecs: 27960,
+      leaveDaysTaken: 0.25,
+      status: "0.25 day Paid Leave(Annual Leave$1$), 0.75 day Present",
+      filo: { checkin: "2026-09-15 11:12:00", checkout: "2026-09-15 20:13:00" },
+    },
+  },
+};
+const effective = computeEffectiveTargets(
+  leaveData,
+  { checkin: leaveCheckin, isFromYesterday: false },
+  new Date(2026, 8, 15, 12, 0, 0),
+  DEFAULT_POLICY,
+);
+assert.strictEqual(
+  hhmm(effective.fullTime),
+  "18:27",
+  "the badge and the gates read the pro-rated target too",
+);
+console.log("13 OK  computeEffectiveTargets pro-rates, so gates fire on time");
 
 console.log("\nworked time reads the day record, not the punch rows.");

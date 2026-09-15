@@ -2,15 +2,19 @@ name: Claude Code Review
 
 on:
   pull_request:
-    # No synchronize: at Sonnet/medium a re-review of the same diff on every
-    # push is real spend. Comment @claude to re-run one on demand.
-    types: [opened, ready_for_review, reopened]
+    types: [opened, synchronize, ready_for_review, reopened]
     # Optional: Only run on specific file changes
     # paths:
     #   - "src/**/*.ts"
     #   - "src/**/*.tsx"
     #   - "src/**/*.js"
     #   - "src/**/*.jsx"
+
+# One review per PR at a time: synchronize fires on every push, and a burst of
+# commits would otherwise run several Sonnet reviews over diffs already stale.
+concurrency:
+  group: claude-review-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
 
 jobs:
   claude-review:
@@ -57,29 +61,38 @@ jobs:
 
             Then run: /code-review:code-review medium --comment ${{ github.repository }}/pull/${{ github.event.pull_request.number }}
 
-            Findings, if any, go on the diff as inline comments. Leave every one
-            of them unresolved - they are for a human to act on and close.
+            Findings, if any, go on the diff as inline comments, left open
+            while they stand - see the resolving rule at the end.
 
-            Whatever the outcome, you MUST finish by posting exactly one
-            review. Silence is not an acceptable result: a run that says nothing
-            is indistinguishable from a run that never happened, which is how
-            this workflow sat broken for four days.
+            Whatever the outcome, the verdict MUST reach the PR. Silence is
+            not an acceptable result: a run that says nothing is
+            indistinguishable from a run that never happened, which is how this
+            workflow sat broken for four days.
 
-            On PASS, submit it as an approving review:
-            `gh pr review <n> --approve --body "..."`. That puts the green check
-            on the PR, which is the signal a clean run should leave.
+            This workflow runs again on every push to an open PR, so the
+            summary is one living comment rather than a new one each time:
 
-            If that call fails, the repository has "Allow GitHub Actions to
-            create and approve pull requests" switched off. Do not treat that as
-            a failed run - fall back to `gh pr comment <n> --body "..."` with the
-            identical body, and add one closing line saying the approval was
-            refused by that setting. The verdict still has to reach the PR.
+              gh pr comment <n> --edit-last --create-if-none --body "..."
 
-            On CHANGES REQUESTED, use `gh pr review <n> --comment --body "..."`.
-            Never `--request-changes`: branch protection decides what blocks a
-            merge here, not this workflow.
+            That edits the summary already on the PR, or writes the first one.
+            Never plain `gh pr comment` - it would leave a trail of stale
+            verdicts, each contradicting the last.
 
-            The body contains, in this order:
+            On PASS, additionally approve: `gh pr review <n> --approve --body`
+            with a single line pointing at the summary comment. That is the
+            green check a clean run should leave.
+
+            If the approve call fails, the repository has "Allow GitHub Actions
+            to create and approve pull requests" switched off. That is expected,
+            not a failed run - say so in one closing line of the summary and
+            carry on. The verdict has already reached the PR by then.
+
+            On CHANGES REQUESTED, submit no review event at all. The updated
+            summary and the unresolved inline comments are the signal. Never
+            `--request-changes`: branch protection decides what blocks a merge
+            here, not this workflow.
+
+            The summary contains, in this order:
 
             1. A verdict line: `**PASS**` or `**CHANGES REQUESTED**`.
             2. The invariant checklist, one row per invariant from
@@ -91,16 +104,17 @@ jobs:
             4. On CHANGES REQUESTED only: the findings, each one linking the
                inline comment you left for it.
 
-            Post the body once, through one of those commands - never both.
-
-            If the verdict is PASS, also resolve every unresolved review thread
-            you opened on earlier runs of this PR, so a branch that has been
-            fixed stops showing stale objections. Resolve only threads authored
-            by you. Use the GraphQL resolveReviewThread mutation via `gh api
-            graphql`. Never resolve a thread a human wrote, and never resolve
-            anything when the verdict is CHANGES REQUESTED.
-          # Sonnet + medium: this repo sees a handful of PRs, and they touch
-          # shared logic - Haiku/low had nothing useful to say about a 63-file diff.
+            Resolving follows the finding, not the verdict. On every run,
+            resolve any thread you opened whose finding the current diff has
+            addressed - through `gh api graphql` and the resolveReviewThread
+            mutation - and leave open every thread whose finding still stands.
+            A PASS therefore closes all of yours; a push fixing two of three
+            closes those two while the PR stays CHANGES REQUESTED. Resolve only
+            threads you authored. Never touch a thread a human wrote, even to
+            agree with it.
+          # Sonnet + medium: these PRs touch shared logic, and Haiku/low had
+          # nothing useful to say about a 63-file diff. Every push re-reviews,
+          # which the concurrency group above keeps to one run at a time.
           claude_args: '--model claude-sonnet-5 --allowedTools "mcp__github_inline_comment__create_inline_comment,Bash(gh pr comment:*),Bash(gh pr review:*),Bash(gh pr view:*),Bash(gh api:*)"'
           # See https://github.com/anthropics/claude-code-action/blob/main/docs/usage.md
           # or https://code.claude.com/docs/en/cli-reference for available options

@@ -236,7 +236,7 @@ export function deriveCycleLabel(start: Date, end: Date, lang: Lang): string {
 }
 
 export type QuotaRecord = { label: string; hours?: string; note?: string };
-export type HistoryDay = { label: string; tsecs: number };
+export type HistoryDay = { label: string; tsecs: number; fraction: number };
 
 export type CycleUsageDerived = {
   label: string;
@@ -284,7 +284,7 @@ export function deriveCycleUsage(
       hours: (tsecs / 3600).toFixed(1),
     };
 
-    cycleDays.push({ label: dayLabel, tsecs });
+    cycleDays.push({ label: dayLabel, tsecs, fraction });
 
     if (tsecs > 0) {
       workedSeconds += tsecs;
@@ -390,9 +390,9 @@ export function deriveHistoryBars(
     const kind: HistoryBarKind =
       day.tsecs === 0
         ? "empty"
-        : day.tsecs < policy.shortDaySeconds
+        : day.tsecs < policy.shortDaySeconds * day.fraction
           ? "low"
-          : day.tsecs < policy.fullDaySeconds
+          : day.tsecs < policy.fullDaySeconds * day.fraction
             ? "short"
             : "none";
     const heightPercent: number = Math.max(

@@ -147,10 +147,10 @@ describe("deriveTimerState", () => {
 describe("deriveHistoryBars", () => {
   it("classifies empty, low, short and full days", () => {
     const days: HistoryDay[] = [
-      { label: "a", tsecs: 0 },
-      { label: "b", tsecs: 3 * 3600 },
-      { label: "c", tsecs: 7 * 3600 },
-      { label: "d", tsecs: 9 * 3600 },
+      { label: "a", tsecs: 0, fraction: 1 },
+      { label: "b", tsecs: 3 * 3600, fraction: 1 },
+      { label: "c", tsecs: 7 * 3600, fraction: 1 },
+      { label: "d", tsecs: 9 * 3600, fraction: 1 },
     ];
     const bars: HistoryBar[] = deriveHistoryBars(days, policy, 9 * 3600);
     expect(bars.map((bar: HistoryBar): string => bar.kind)).toEqual([
@@ -158,6 +158,19 @@ describe("deriveHistoryBars", () => {
       "low",
       "short",
       "none",
+    ]);
+  });
+
+  it("measures a part-leave day against its own reduced bars", () => {
+    // 7h46m on a 0.25-leave day met the 6h owed, so the bar is not a short one.
+    const days: HistoryDay[] = [
+      { label: "quarter-leave", tsecs: 27960, fraction: 0.75 },
+      { label: "same hours, no leave", tsecs: 27960, fraction: 1 },
+    ];
+    const bars: HistoryBar[] = deriveHistoryBars(days, policy, 9 * 3600);
+    expect(bars.map((bar: HistoryBar): string => bar.kind)).toEqual([
+      "none",
+      "short",
     ]);
   });
 });

@@ -69,16 +69,16 @@ globalThis.chrome = {
     getURL: (p) => p,
   },
 };
-// live-format entries: closed pair + open "-", check-in 09:29
+// live DMY format on the day record, still checked in (checkout "-")
 globalThis.fetch = async () => ({
   ok: true,
   json: async () => ({
-    dayList: { 0: { orgdate: "2026-09-11", tsecs: 4 * 3600 } },
-    entries: {
-      "2026-09-11": [
-        { fdate: "11-Sep-2026 - 09:29", tdate: "11-Sep-2026 - 11:53" },
-        { fdate: "11-Sep-2026 - 13:00", tdate: "-" },
-      ],
+    dayList: {
+      0: {
+        orgdate: "2026-09-11",
+        tsecs: 4 * 3600,
+        filo: { checkin: "11-Sep-2026 - 09:29", checkout: "-" },
+      },
     },
   }),
 });

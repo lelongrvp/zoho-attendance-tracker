@@ -75,8 +75,9 @@ const fdate = `${key(checkin)} ${String(checkin.getHours()).padStart(2, "0")}:${
 globalThis.fetch = async () => ({
   ok: true,
   json: async () => ({
-    dayList: { 0: { orgdate: key(checkin), tsecs: 8 * 3600 } },
-    entries: { [key(now)]: [{ fdate }] },
+    dayList: {
+      0: { orgdate: key(now), tsecs: 8 * 3600, filo: { checkin: fdate } },
+    },
   }),
 });
 

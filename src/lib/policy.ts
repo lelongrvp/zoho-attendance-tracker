@@ -9,7 +9,6 @@ import type {
   WorkedTargets,
   WorkedTime,
   ZohoDay,
-  ZohoEntry,
 } from "./types.ts";
 import { read, readOne } from "./storage.ts";
 
@@ -137,19 +136,24 @@ export function toLocalDateKey(date: Date): string {
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
 }
 
+export function findDay(
+  attendanceData: AttendanceData | undefined,
+  date: Date,
+): ZohoDay | null {
+  const key: string = toLocalDateKey(date);
+  for (const day of Object.values(attendanceData?.dayList ?? {})) {
+    if (day.orgdate === key) {
+      return day;
+    }
+  }
+  return null;
+}
+
 export function findCheckin(
   attendanceData: AttendanceData | undefined,
   date: Date,
 ): Date | null {
-  const entries: ZohoEntry[] =
-    attendanceData?.entries?.[toLocalDateKey(date)] ?? [];
-  for (const entry of entries) {
-    const checkin: Date | null = parseZohoTimestamp(entry.fdate);
-    if (checkin) {
-      return checkin;
-    }
-  }
-  return null;
+  return parseZohoTimestamp(findDay(attendanceData, date)?.filo?.checkin);
 }
 
 export function findActiveCheckin(
@@ -195,59 +199,43 @@ export function computeTargets(checkinDate: Date, policy: Policy): Targets {
   };
 }
 
-export function computeWorkedMs(
-  dayEntries: ZohoEntry[] | null | undefined,
+// Zoho states the day: filo is its own first-in/last-out, tsecs its own total.
+// Both are authoritative, and reconcile as (checkout - checkin) - unpaid breaks.
+export function computeWorked(
+  day: ZohoDay | null | undefined,
   now: Date,
 ): WorkedTime | null {
-  if (!dayEntries || dayEntries.length === 0) {
+  const checkin: Date | null = parseZohoTimestamp(day?.filo?.checkin);
+  if (!day || !checkin) {
     return null;
   }
 
-  let workedMs: number = 0;
-  let openSince: Date | null = null;
+  const breakMs: number =
+    Math.max(0, Number(day.totalUnPaidBreakInSecs) || 0) * 1000;
+  const checkout: Date | null = parseZohoTimestamp(day.filo?.checkout);
 
-  if (dayEntries.some((entry) => entry.tdate !== undefined)) {
-    for (const entry of dayEntries) {
-      const from: Date | null = parseZohoTimestamp(entry.fdate);
-      if (!from) {
-        continue;
-      }
-      const to: Date | null = parseZohoTimestamp(entry.tdate);
-      if (to) {
-        workedMs += Math.max(0, to.getTime() - from.getTime());
-      } else {
-        openSince = from;
-      }
-    }
-  } else {
-    const punches: Date[] = dayEntries
-      .map((entry: ZohoEntry): Date | null => parseZohoTimestamp(entry.fdate))
-      .filter((punch: Date | null): punch is Date => punch !== null);
-    for (let i = 0; i + 1 < punches.length; i += 2) {
-      const from: Date | undefined = punches[i];
-      const to: Date | undefined = punches[i + 1];
-      if (from && to) {
-        workedMs += Math.max(0, to.getTime() - from.getTime());
-      }
-    }
-    if (punches.length % 2 === 1) {
-      openSince = punches[punches.length - 1] ?? null;
-    }
+  // Zoho echoes the punch as checkout == checkin; that is open, not a 0h day.
+  if (!checkout || checkout.getTime() <= checkin.getTime()) {
+    return {
+      workedMs: Math.max(0, now.getTime() - checkin.getTime() - breakMs),
+      isOpen: true,
+    };
   }
 
-  if (openSince) {
-    workedMs += Math.max(0, now.getTime() - openSince.getTime());
-  }
-
-  return { workedMs, isOpen: openSince !== null };
+  const tsecs: number = Number(day.tsecs);
+  const workedMs: number =
+    Number.isFinite(tsecs) && tsecs > 0
+      ? tsecs * 1000
+      : Math.max(0, checkout.getTime() - checkin.getTime() - breakMs);
+  return { workedMs, isOpen: false };
 }
 
 export function computeWorkedTargets(
-  dayEntries: ZohoEntry[] | null | undefined,
+  day: ZohoDay | null | undefined,
   now: Date,
   policy: Policy,
 ): WorkedTargets | null {
-  const worked: WorkedTime | null = computeWorkedMs(dayEntries, now);
+  const worked: WorkedTime | null = computeWorked(day, now);
   if (!worked) {
     return null;
   }
@@ -274,10 +262,8 @@ export function computeEffectiveTargets(
   policy: Policy,
 ): Targets {
   if (policy.targetMode === "worked") {
-    const dayEntries: ZohoEntry[] | undefined =
-      attendanceData?.entries?.[toLocalDateKey(active.checkin)];
     const workedTargets: WorkedTargets | null = computeWorkedTargets(
-      dayEntries,
+      findDay(attendanceData, active.checkin),
       now,
       policy,
     );

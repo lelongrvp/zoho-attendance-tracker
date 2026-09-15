@@ -56,6 +56,9 @@ const stamp = (date) => {
   return `${String(date.getDate()).padStart(2, "0")}-${months[date.getMonth()]}-${date.getFullYear()} - ${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
 };
 
+// today is still open: a check-in 3h ago and no checkout yet
+dayList[key(now)].filo = { checkin: stamp(checkin), checkout: "-" };
+
 const STORE = {
   csrfToken: "fixture",
   theme: "__THEME__",
@@ -65,10 +68,7 @@ const STORE = {
   lastSuccessAt: Date.now() - 2 * 60 * 1000,
   lastError: null,
   archivedMonths: {},
-  attendanceData: {
-    dayList,
-    entries: { [key(now)]: [{ fdate: stamp(checkin), tdate: "-" }] },
-  },
+  attendanceData: { dayList },
 };
 
 globalThis.chrome = {

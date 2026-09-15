@@ -89,8 +89,13 @@ const send = () =>
 
 // ---- Phase 1: 00:20, yesterday's 16:30 late start -> full-time 00:30 still running
 payload = {
-  dayList: { 0: { orgdate: "2026-09-10", tsecs: 7 * 3600 } },
-  entries: { "2026-09-10": [{ fdate: "2026-09-10 16:30:00" }] },
+  dayList: {
+    0: {
+      orgdate: "2026-09-10",
+      tsecs: 7 * 3600,
+      filo: { checkin: "2026-09-10 16:30:00" },
+    },
+  },
 };
 let res = await send();
 assert.strictEqual(res.status, "success");
@@ -159,8 +164,13 @@ store.clear();
 calls.alarmsCreated.length = 0;
 fakeNow = new Date(2026, 8, 11, 11, 0, 0).getTime();
 payload = {
-  dayList: { 0: { orgdate: "2026-09-11", tsecs: 2 * 3600 } },
-  entries: { "2026-09-11": [{ fdate: "2026-09-11 09:00:00" }] },
+  dayList: {
+    0: {
+      orgdate: "2026-09-11",
+      tsecs: 2 * 3600,
+      filo: { checkin: "2026-09-11 09:00:00" },
+    },
+  },
 };
 res = await send();
 assert.strictEqual(res.status, "success");

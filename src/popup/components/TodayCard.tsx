@@ -140,7 +140,7 @@ export function TodayCard({
       </div>
 
       <WorkedLine
-        dayEntries={activeToday?.dayEntries ?? null}
+        day={activeToday?.day ?? null}
         now={new Date(now)}
         policy={policy}
         fulltimeDate={activeToday?.fulltime ?? null}

@@ -75,12 +75,13 @@ globalThis.chrome = {
 globalThis.fetch = async () => ({
   ok: true,
   json: async () => ({
-    dayList: { 0: { orgdate: "2026-09-11", tsecs: 5 * 3600 } },
-    entries: {
-      "2026-09-11": [
-        { fdate: "2026-09-11 09:00:00", tdate: "2026-09-11 12:00:00" },
-        { fdate: "2026-09-11 13:00:00" },
-      ],
+    dayList: {
+      0: {
+        orgdate: "2026-09-11",
+        tsecs: 5 * 3600,
+        totalUnPaidBreakInSecs: 3600,
+        filo: { checkin: "2026-09-11 09:00:00" },
+      },
     },
   }),
 });

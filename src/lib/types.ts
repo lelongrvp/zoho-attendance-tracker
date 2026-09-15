@@ -8,12 +8,20 @@ export type ZohoEntry = {
   tdate?: string;
 };
 
+/** First-in / last-out. Zoho's own resolution of a day's punches. */
+export type ZohoFilo = {
+  checkin?: string;
+  checkout?: string;
+};
+
 export type ZohoDay = {
   orgdate: string;
   tsecs?: number | string;
   status?: string;
   leaveDaysTaken?: number | string;
   approvalInfo?: unknown;
+  filo?: ZohoFilo;
+  totalUnPaidBreakInSecs?: number | string;
 };
 
 export type AttendanceData = {

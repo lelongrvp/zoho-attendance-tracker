@@ -69,8 +69,10 @@ const key = (d) =>
 const checkin = new Date(now.getTime() - 3 * 3600 * 1000);
 const fdate = `${key(checkin)} ${String(checkin.getHours()).padStart(2, "0")}:${String(checkin.getMinutes()).padStart(2, "0")}:00`;
 const month = (extra) => ({
-  dayList: { 0: { orgdate: key(checkin), tsecs: 3 * 3600 }, ...extra },
-  entries: { [key(now)]: [{ fdate }] },
+  dayList: {
+    0: { orgdate: key(now), tsecs: 3 * 3600, filo: { checkin: fdate } },
+    ...extra,
+  },
 });
 globalThis.fetch = async () => ({ ok: true, json: async () => month({}) });
 

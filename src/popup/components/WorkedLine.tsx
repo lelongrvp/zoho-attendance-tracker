@@ -1,11 +1,11 @@
 import type { VNode } from "preact";
 import type { Translator } from "@/lib/i18n.ts";
-import type { Policy, ZohoEntry } from "@/lib/types.ts";
+import type { Policy, ZohoDay } from "@/lib/types.ts";
 import type { WorkedLineState } from "@/popup/derive.ts";
 import { deriveWorkedLine } from "@/popup/derive.ts";
 
 export type WorkedLineProps = {
-  dayEntries: ZohoEntry[] | null;
+  day: ZohoDay | null;
   now: Date;
   policy: Policy;
   fulltimeDate: Date | null;
@@ -13,14 +13,14 @@ export type WorkedLineProps = {
 };
 
 export function WorkedLine({
-  dayEntries,
+  day,
   now,
   policy,
   fulltimeDate,
   translate,
 }: WorkedLineProps): VNode {
   const state: WorkedLineState | null = deriveWorkedLine(
-    dayEntries,
+    day,
     now,
     policy,
     fulltimeDate,

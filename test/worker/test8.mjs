@@ -3,7 +3,7 @@ const warns = [];
 const realWarn = console.warn;
 console.warn = (...args) => warns.push(args.join(" "));
 globalThis.chrome = { storage: { local: { get: async () => ({}) } } };
-const { parseZohoTimestamp, computeWorkedMs, findCheckin } =
+const { parseZohoTimestamp, computeWorked, findCheckin } =
   await import("../../src/lib/policy.ts");
 
 // 1. unknown format -> null, not a guessed Date
@@ -44,33 +44,40 @@ d = parseZohoTimestamp("10-Sep-2026 - 09:29:45");
 assert.strictEqual(d.getSeconds(), 45);
 console.log("3 OK  AM/PM + seconds variants");
 
-// 4. corrupt entries degrade gracefully
+// 4. a corrupt day record degrades gracefully rather than guessing
 const now = new Date(2026, 8, 10, 15, 0, 0);
-const mixed = computeWorkedMs(
-  [
-    { fdate: "corrupt", tdate: "corrupt" },
-    { fdate: "2026-09-10 13:00:00", tdate: "-" },
-  ],
-  now,
-);
-assert.strictEqual(
-  mixed.workedMs,
-  2 * 3600 * 1000,
-  "corrupt pair skipped, open session counted",
-);
-const checkin = findCheckin(
+const corruptCheckout = computeWorked(
   {
-    entries: {
-      "2026-09-10": [{ fdate: "corrupt" }, { fdate: "2026-09-10 09:00:00" }],
-    },
+    orgdate: "2026-09-10",
+    filo: { checkin: "2026-09-10 13:00:00", checkout: "corrupt" },
   },
   now,
 );
 assert.strictEqual(
-  checkin.getHours(),
-  9,
-  "findCheckin skips unparseable entries",
+  corruptCheckout.workedMs,
+  2 * 3600 * 1000,
+  "unparseable checkout reads as still open, not as a closed zero-hour day",
 );
-console.log("4 OK  corrupt entries skipped, usable ones kept");
+assert.strictEqual(corruptCheckout.isOpen, true);
+assert.strictEqual(
+  computeWorked({ orgdate: "2026-09-10", filo: { checkin: "corrupt" } }, now),
+  null,
+  "unparseable check-in yields no worked time at all",
+);
+const checkin = findCheckin(
+  {
+    dayList: {
+      0: { orgdate: "2026-09-10", filo: { checkin: "2026-09-10 09:00:00" } },
+    },
+  },
+  now,
+);
+assert.strictEqual(checkin.getHours(), 9, "findCheckin reads filo.checkin");
+assert.strictEqual(
+  findCheckin({ dayList: { 0: { orgdate: "2026-09-09" } } }, now),
+  null,
+  "a day record for another date is not today's check-in",
+);
+console.log("4 OK  corrupt day record degrades, never guesses");
 console.warn = realWarn;
 console.log("\nAll strict-parser assertions passed.");

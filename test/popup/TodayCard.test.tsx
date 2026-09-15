@@ -19,7 +19,7 @@ function makeActiveToday(checkinHour: number): ActiveToday {
     isFromYesterday: false,
     checkout1: new Date(2026, 0, 5, checkinHour + 4, 30, 0),
     fulltime: new Date(2026, 0, 5, checkinHour + 9, 0, 0),
-    dayEntries: null,
+    day: null,
   };
 }
 

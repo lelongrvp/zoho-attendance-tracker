@@ -93,7 +93,7 @@ globalThis.chrome = {
 
 // Measures the glyph with a Range, not the box: the box alone has missed two real bugs.
 setTimeout(() => {
-  const cells = [...document.querySelectorAll(".cal-cell:not(.spacer)")];
+  const cells = [...document.querySelectorAll('[data-cal-cell="date"]')];
   const geometries = new Set();
   const offsets = new Set();
   for (const cell of cells) {

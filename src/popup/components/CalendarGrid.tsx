@@ -40,6 +40,7 @@ export function CalendarGrid({
         {Array.from({ length: leadingSpacers }, (_, index: number): VNode => (
           <div
             key={`spacer-${index}`}
+            data-cal-cell="spacer"
             class="h-[34px] rounded-cell border-none bg-transparent"
           />
         ))}

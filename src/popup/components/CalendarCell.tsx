@@ -63,6 +63,7 @@ export function CalendarCell({
 
   return (
     <div
+      data-cal-cell="date"
       title={title}
       class={`${CELL_BASE} border ${status === "future" ? "border-dashed" : ""} ${color.bg} ${color.text} ${borderColor} ${ring}`}
     >

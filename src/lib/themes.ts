@@ -331,8 +331,6 @@ export function resolveTokens(
 export function applyTokens(rootElement: HTMLElement, tokens: Tokens): void {
   for (const [name, value] of Object.entries(tokens) as [string, string][]) {
     rootElement.style.setProperty(name, value);
-    // The unconverted popup stylesheet still reads the unprefixed names; drops with phase 4.
-    rootElement.style.setProperty(name.replace("--color-", "--"), value);
   }
 }
 

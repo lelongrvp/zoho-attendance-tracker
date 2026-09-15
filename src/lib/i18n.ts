@@ -228,24 +228,3 @@ export function monthNames(lang: Lang): string[] {
 export function weekdayNames(lang: Lang): string[] {
   return WEEKDAYS[normalizeLanguage(lang)];
 }
-
-// Static labels carry data-i18n (textContent) or data-i18n-title (tooltip).
-export function applyStaticTranslations(
-  root: ParentNode,
-  translate: Translator,
-): void {
-  root
-    .querySelectorAll<HTMLElement>("[data-i18n]")
-    .forEach((element: HTMLElement): void => {
-      element.textContent = translate(element.dataset["i18n"] ?? "");
-    });
-  root
-    .querySelectorAll<HTMLElement>("[data-i18n-title]")
-    .forEach((element: HTMLElement): void => {
-      const text: string = translate(element.dataset["i18nTitle"] ?? "");
-      element.title = text;
-      if (element.hasAttribute("aria-label")) {
-        element.setAttribute("aria-label", text);
-      }
-    });
-}

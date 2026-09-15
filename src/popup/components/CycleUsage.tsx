@@ -1,7 +1,7 @@
 import type { VNode } from "preact";
 import type { Translator } from "@/lib/i18n.ts";
 import type { Lang, Policy, ZohoDay } from "@/lib/types.ts";
-import type { CycleUsageDerived, QuotaRecord } from "@/popup/derive.ts";
+import type { CycleUsageDerived } from "@/popup/derive.ts";
 import { deriveCycleUsage } from "@/popup/derive.ts";
 import { formatSignedHours } from "@/popup/format.ts";
 import { QuotaRow } from "./QuotaRow.tsx";
@@ -42,13 +42,6 @@ export function CycleUsage({
         isWarning={false}
         warnRow
         records={usage.days6To8Hours}
-        detailText={
-          usage.days6To8Hours.length > 0
-            ? usage.days6To8Hours
-                .map((record: QuotaRecord): string => `${record.hours}h`)
-                .join(", ")
-            : translate("noRecords")
-        }
       />
 
       <QuotaRow
@@ -58,13 +51,6 @@ export function CycleUsage({
         isWarning={false}
         warnRow={false}
         records={usage.requestDays}
-        detailText={
-          usage.requestDays.length > 0
-            ? usage.requestDays
-                .map((record: QuotaRecord): string => record.label)
-                .join(", ")
-            : translate("none")
-        }
       />
 
       <QuotaRow
@@ -74,13 +60,6 @@ export function CycleUsage({
         isWarning
         warnRow
         records={usage.daysBelow6Hours}
-        detailText={
-          usage.daysBelow6Hours.length > 0
-            ? usage.daysBelow6Hours
-                .map((record: QuotaRecord): string => `${record.hours}h`)
-                .join(", ")
-            : translate("none")
-        }
       />
 
       <div class="mt-2 border-t border-rule pt-2">

@@ -36,7 +36,7 @@ export function CycleUsage({
       </div>
 
       <QuotaRow
-        name={translate("quota68")}
+        name={translate("quotaShort")}
         count={usage.days6To8Hours.length}
         totalSlots={policy.shortDayQuota}
         isWarning={false}
@@ -54,7 +54,7 @@ export function CycleUsage({
       />
 
       <QuotaRow
-        name={translate("quotaUnder6")}
+        name={translate("quotaViolation")}
         count={usage.daysBelow6Hours.length}
         totalSlots={policy.violationQuota}
         isWarning

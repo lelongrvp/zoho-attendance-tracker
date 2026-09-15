@@ -16,7 +16,7 @@ describe("QuotaRow", () => {
     ];
     const { container } = render(
       <QuotaRow
-        name="Days 6-8 hours"
+        name="Short days"
         count={3}
         totalSlots={2}
         isWarning={false}
@@ -35,7 +35,7 @@ describe("QuotaRow", () => {
     ];
     const { container } = render(
       <QuotaRow
-        name="Days 6-8 hours"
+        name="Short days"
         count={2}
         totalSlots={1}
         isWarning={false}

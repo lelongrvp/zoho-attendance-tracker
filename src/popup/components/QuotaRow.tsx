@@ -17,7 +17,6 @@ export type QuotaRowProps = {
   isWarning: boolean;
   warnRow: boolean;
   records: QuotaRecord[];
-  detailText: string;
 };
 
 function slotTitle(record: QuotaRecord | undefined): string | undefined {
@@ -40,7 +39,6 @@ export function QuotaRow({
   isWarning,
   warnRow,
   records,
-  detailText,
 }: QuotaRowProps): VNode {
   const slotsToShow: number = deriveSlotsToShow(count, totalSlots);
   const pillState: QuotaPillState = deriveQuotaPillState(
@@ -93,9 +91,6 @@ export function QuotaRow({
             {count}/{totalSlots}
           </span>
         </div>
-      </div>
-      <div class="mt-0.75 font-num text-[10.5px] tabular-nums text-ink-3 wrap-anywhere">
-        {detailText}
       </div>
     </div>
   );

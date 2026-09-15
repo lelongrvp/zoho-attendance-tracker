@@ -17,6 +17,7 @@ import {
   computeEffectiveTargets,
   computeWorkedTargets,
   findDay,
+  workingFraction,
   describeAttendanceRequest,
   findActiveCheckin,
   getCurrentCycle,
@@ -235,7 +236,7 @@ export function deriveCycleLabel(start: Date, end: Date, lang: Lang): string {
 }
 
 export type QuotaRecord = { label: string; hours?: string; note?: string };
-export type HistoryDay = { label: string; tsecs: number };
+export type HistoryDay = { label: string; tsecs: number; fraction: number };
 
 export type CycleUsageDerived = {
   label: string;
@@ -267,6 +268,7 @@ export function deriveCycleUsage(
   let absentCount: number = 0;
   let workedSeconds: number = 0;
   let workedDays: number = 0;
+  let obligationSeconds: number = 0;
 
   Object.values(dayList).forEach((day: ZohoDay): void => {
     const dayDate: Date | null = parseZohoTimestamp(day.orgdate);
@@ -275,20 +277,22 @@ export function deriveCycleUsage(
     }
 
     const tsecs: number = Number(day.tsecs) || 0;
+    const fraction: number = workingFraction(day);
     const dayLabel: string = formatDayLabel(dayDate, lang);
     const record: QuotaRecord = {
       label: dayLabel,
       hours: (tsecs / 3600).toFixed(1),
     };
 
-    cycleDays.push({ label: dayLabel, tsecs });
+    cycleDays.push({ label: dayLabel, tsecs, fraction });
 
     if (tsecs > 0) {
       workedSeconds += tsecs;
       workedDays++;
-      if (tsecs < policy.shortDaySeconds) {
+      obligationSeconds += policy.fullDaySeconds * fraction;
+      if (tsecs < policy.shortDaySeconds * fraction) {
         daysBelow6Hours.push(record);
-      } else if (tsecs < policy.fullDaySeconds) {
+      } else if (tsecs < policy.fullDaySeconds * fraction) {
         days6To8Hours.push(record);
       }
     }
@@ -305,8 +309,7 @@ export function deriveCycleUsage(
     }
   });
 
-  const balanceSeconds: number =
-    workedSeconds - workedDays * policy.fullDaySeconds;
+  const balanceSeconds: number = workedSeconds - obligationSeconds;
 
   return {
     label,
@@ -387,9 +390,9 @@ export function deriveHistoryBars(
     const kind: HistoryBarKind =
       day.tsecs === 0
         ? "empty"
-        : day.tsecs < policy.shortDaySeconds
+        : day.tsecs < policy.shortDaySeconds * day.fraction
           ? "low"
-          : day.tsecs < policy.fullDaySeconds
+          : day.tsecs < policy.fullDaySeconds * day.fraction
             ? "short"
             : "none";
     const heightPercent: number = Math.max(
@@ -498,13 +501,16 @@ export function deriveCalendarCells(
 
     if (day) {
       const tsecs: number = Number(day.tsecs) || 0;
-      if (Number(day.leaveDaysTaken) > 0) {
+      const fraction: number = workingFraction(day);
+      // Part-day leave is a leave day only if nothing was worked; otherwise the
+      // hours decide, measured against what that fraction of a day actually owed.
+      if (fraction <= 0 || (fraction < 1 && tsecs === 0)) {
         status = "leave";
       } else if ((day.status || "").trim() === "Absent") {
         status = "absent";
-      } else if (tsecs >= policy.fullDaySeconds) {
+      } else if (tsecs >= policy.fullDaySeconds * fraction) {
         status = "full";
-      } else if (tsecs >= policy.shortDaySeconds) {
+      } else if (tsecs >= policy.shortDaySeconds * fraction) {
         status = "short";
       } else if (tsecs > 0) {
         status = "low";

@@ -16,13 +16,12 @@ describe("QuotaRow", () => {
     ];
     const { container } = render(
       <QuotaRow
-        name="Days 6-8 hours"
+        name="Short days"
         count={3}
         totalSlots={2}
         isWarning={false}
         warnRow
         records={records}
-        detailText="8.5h, 9.0h, 7.0h"
       />,
     );
     const slots: NodeListOf<Element> = container.querySelectorAll(".grid");
@@ -36,13 +35,12 @@ describe("QuotaRow", () => {
     ];
     const { container } = render(
       <QuotaRow
-        name="Days 6-8 hours"
+        name="Short days"
         count={2}
         totalSlots={1}
         isWarning={false}
         warnRow
         records={records}
-        detailText=""
       />,
     );
     const slots: Element[] = [...container.querySelectorAll(".grid")];
@@ -59,7 +57,6 @@ describe("QuotaRow", () => {
         isWarning={false}
         warnRow={false}
         records={[]}
-        detailText="None"
       />,
     );
     expect(getByText("1/3")).toBeTruthy();
@@ -74,7 +71,6 @@ describe("QuotaRow", () => {
         isWarning={false}
         warnRow={false}
         records={[]}
-        detailText="None"
       />,
     );
     expect(container.querySelectorAll("svg").length).toBe(0);
